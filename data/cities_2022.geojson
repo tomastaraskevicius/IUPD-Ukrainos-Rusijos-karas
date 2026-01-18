@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Vilnius",
+        "population": 592389,
+        "unit": "people",
+        "year_note": "example"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [25.27965, 54.68716]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kaunas",
+        "population": 298753,
+        "unit": "people",
+        "year_note": "example"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [23.90360, 54.89852]
+      }
+    }
+  ]
+}
