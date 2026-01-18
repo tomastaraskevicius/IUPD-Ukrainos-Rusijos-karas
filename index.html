@@ -9,7 +9,7 @@
 
   <style>
     :root { --gap: 16px; }
-    body { margin:0; font-family: Arial, sans-serif; background:#f6f7f9; color:#111; }
+    body { margin:0; font-family: Arial, sans-serif; background:#f6f7f9; }
 
     .map-area{
       position: fixed;
@@ -36,44 +36,12 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     }
     .panel h3 { margin:0 0 10px 0; font-size:16px; }
-    select{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #ccc; background:#fff; font-size:14px; }
-
-    .row { display:flex; gap:10px; margin-top:10px; }
-    button{
-      flex: 1;
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      background:#fff;
-      cursor:pointer;
-      font-size:13px;
-    }
-    button.active{
-      border-color:#6b7cff;
-      background:#eef2ff;
-    }
-
-    .badge{
-      display:block;
-      margin-top:10px;
-      padding:8px 10px;
-      border-radius:10px;
-      background:#f3f4f6;
-      border:1px solid #e5e7eb;
-      font-size:12px;
-      line-height:1.35;
-      word-break: break-word;
-    }
-
-    .note{
-      margin-top:10px;
-      font-size:12px;
-      color:#444;
-      line-height:1.35;
-    }
+    select{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #ccc; background:#fff; }
+    .badge{ display:inline-block; margin-top:10px; padding:6px 10px; border-radius:999px; background:#eef2ff; border:1px solid #d9ddff; font-size:12px; }
+    .note{ margin-top:10px; font-size:12px; color:#444; line-height:1.35; }
 
     @media (max-width: 820px) {
-      .map-area { right: var(--gap); bottom: 190px; }
+      .map-area { right: var(--gap); bottom: 160px; }
       .panel { width:auto; left: var(--gap); right: var(--gap); top:auto; bottom: var(--gap); }
     }
   </style>
@@ -92,16 +60,12 @@
       <option value="2026">2026</option>
     </select>
 
-    <div class="row">
-      <button id="debugBtn" type="button">Debug: OFF</button>
-    </div>
-
     <div class="badge" id="status">Rodomas: 2022</div>
-    <div class="badge" id="xy">Paskutinis paspaudimas: -</div>
 
     <div class="note">
-      Tikslas: nematyti jokių taškų. Popup atsiranda tik paspaudus ant <b>Vilnius</b> arba <b>Kaunas</b> zonų.<br><br>
-      Jei popup nerodo – įjunk Debug ir patikrink ar zonos kontūrai dengia objektus.
+      Paspausk ant <b>Vilnius</b> arba <b>Kaunas</b> kontūro (arba jų viduje) – iššoks popup su gyventojų skaičiumi.
+      <br><br>
+      (Jei reikės – įjunk DEBUG apačioje, kad matytum x,y koordinates.)
     </div>
   </div>
 
@@ -109,90 +73,71 @@
 
   <script>
     const yearSelect = document.getElementById("yearSelect");
-    const statusEl = document.getElementById("status");
-    const xyEl = document.getElementById("xy");
-    const debugBtn = document.getElementById("debugBtn");
+    const status = document.getElementById("status");
 
-    // Leaflet su pikseline koordinačių sistema
     const map = L.map('map', {
       crs: L.CRS.Simple,
       minZoom: -2,
       maxZoom: 4
     });
 
-    // Sluoksniai
     let overlay = null;
-    const regionsLayer = L.layerGroup().addTo(map);
+    let clickRegions = L.layerGroup().addTo(map);
 
-    let DEBUG = false;
+    // Jei reikės susirasti tiksliai koordinates, nustatyk true
+    const DEBUG_SHOW_CLICK_COORDS = false;
 
-    function setDebug(on) {
-      DEBUG = on;
-      debugBtn.textContent = `Debug: ${DEBUG ? "ON" : "OFF"}`;
-      debugBtn.classList.toggle("active", DEBUG);
-      // persikraunam metus, kad perbraižytų regionus su/ be kontūrų
-      loadYear(yearSelect.value);
+    if (DEBUG_SHOW_CLICK_COORDS) {
+      map.on('click', (e) => {
+        const x = Math.round(e.latlng.lng);
+        const y = Math.round(e.latlng.lat);
+        console.log(`x=${x}, y=${y}`);
+        L.circleMarker([y, x], { radius: 4 }).addTo(map);
+      });
     }
 
-    debugBtn.addEventListener("click", () => setDebug(!DEBUG));
+    // Bendras stilius kontūrams (matomi kontūrai, skaidrus vidus)
+    const outlineStyle = {
+      color: "#ff0000",     // kontūro spalva (gali keisti)
+      weight: 3,            // kontūro storis
+      opacity: 0.9,
+      fill: true,
+      fillOpacity: 0.0      // vidus nematomas, bet paspaudžiamas
+    };
 
-    // CLICK koordinatės visada rodomos dešinėje (padeda suderinti zonas)
-    map.on("click", (e) => {
-      const x = Math.round(e.latlng.lng);
-      const y = Math.round(e.latlng.lat);
-      xyEl.textContent = `Paskutinis paspaudimas: x=${x}, y=${y}`;
-      if (DEBUG) console.log(`CLICK x=${x}, y=${y}`);
-    });
+    function addRegionPolygon(pointsXY, popupHtml) {
+      const latlngs = pointsXY.map(([x,y]) => [y, x]); // Leaflet: [y,x]
+      const poly = L.polygon(latlngs, outlineStyle);
 
-    function regionStyle() {
-      // Debug ON: matom kontūrą
-      // Debug OFF: visiškai nematomas, bet paspaudžiamas
-      return DEBUG ? {
-        color: "#ff0000",
-        weight: 2,
-        fillColor: "#ff0000",
-        fillOpacity: 0.10
-      } : {
-        stroke: false,
-        fill: true,
-        fillOpacity: 0,
-        opacity: 0
-      };
-    }
-
-    function addPolygonXY(pointsXY, popupHtml) {
-      // pointsXY: [ [x,y], [x,y], ...]
-      const latlngs = pointsXY.map(([x,y]) => [y,x]); // Leaflet: [y,x]
-      const poly = L.polygon(latlngs, regionStyle());
-      poly.on("click", (e) => {
+      poly.on('click', (e) => {
         L.popup()
           .setLatLng(e.latlng)
           .setContent(popupHtml)
           .openOn(map);
       });
-      poly.addTo(regionsLayer);
+
+      poly.addTo(clickRegions);
       return poly;
     }
 
-    function addRectXY(x1, y1, x2, y2, popupHtml) {
-      const rect = L.rectangle([[y1,x1],[y2,x2]], regionStyle());
-      rect.on("click", (e) => {
+    function addRegionRect(x1, y1, x2, y2, popupHtml) {
+      const rect = L.rectangle([[y1, x1], [y2, x2]], outlineStyle);
+
+      rect.on('click', (e) => {
         L.popup()
           .setLatLng(e.latlng)
           .setContent(popupHtml)
           .openOn(map);
       });
-      rect.addTo(regionsLayer);
+
+      rect.addTo(clickRegions);
       return rect;
     }
 
     async function loadYear(year) {
-      statusEl.textContent = `Rodomas: ${year}`;
-      regionsLayer.clearLayers();
+      status.textContent = `Rodomas: ${year}`;
 
       const imgUrl = `assets/${year}.jpg`;
-
-      // užkraunam paveikslą ir sužinom dydį
       const img = new Image();
       img.src = imgUrl;
       await img.decode();
@@ -205,36 +150,31 @@
       overlay = L.imageOverlay(imgUrl, bounds).addTo(map);
       map.fitBounds(bounds);
 
-      // ---- REGIONAI (čia svarbiausia dalis) ----
-      // ŠITOS koordinatės yra PAVYZDYS.
-      // Jeigu popup nerodo: įjunk Debug ir pasitikrink ar raudonas kontūras dengia objektą.
-      // Tada pakeisk skaičius pagal tavo CLICK x,y.
+      clickRegions.clearLayers();
 
       if (year === "2022") {
-
-        // VILNIUS (trikampis) – pakeisk 3 kampus pagal savo piešinį
-        // Patarimas: Debug ON, paspausk ant 3 kampų ir įrašyk x,y.
-        addPolygonXY(
+        // VILNIUS (trikampis) — šitos koordinatės yra pavyzdinės.
+        // Jei kontūras ne ant trikampio: įjunk DEBUG ir pasiimk tikslius 3 kampus.
+        addRegionPolygon(
           [
-            [ 140, 260 ],  // TODO kampas 1
-            [ 140, 420 ],  // TODO kampas 2
-            [ 430, 420 ]   // TODO kampas 3
+            [ 80,  210],  // kampas 1
+            [ 80,  360],  // kampas 2
+            [ 340, 360]   // kampas 3
           ],
           "<b>Vilnius</b><br>Gyventojų sk.: 592389"
         );
 
-        // KAUNAS (stačiakampis) – pakeisk 2 kampus (viršutinis kairys ir apatinis dešinys)
-        addRectXY(
-          760, 270,  // TODO x1,y1
-          980, 390,  // TODO x2,y2
+        // KAUNAS (stačiakampis) — pavyzdinės ribos.
+        // Jei kontūras ne ant stačiakampio: įjunk DEBUG ir pasiimk 2 kampus (virš. kairys ir apač. dešinys).
+        addRegionRect(
+          700, 245,   // x1, y1
+          900, 340,   // x2, y2
           "<b>Kaunas</b><br>Gyventojų sk.: 298753"
         );
       }
     }
 
     yearSelect.addEventListener("change", () => loadYear(yearSelect.value));
-
-    // start
     loadYear("2022");
   </script>
 </body>
