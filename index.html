@@ -5,96 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Žemėlapiai pagal metus</title>
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     :root { --gap: 16px; }
+    body { margin:0; font-family: Arial, sans-serif; background:#f6f7f9; }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f6f7f9;
-      color: #111;
-    }
-
-    /* Kairėje – žemėlapis */
-    .map-area {
+    .map-area{
       position: fixed;
       left: var(--gap);
       top: var(--gap);
       right: 260px;
       bottom: var(--gap);
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      overflow: hidden;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:12px;
+      overflow:hidden;
     }
+    #map { width:100%; height:100%; }
 
-    #map { width: 100%; height: 100%; }
-
-    /* Dešinėje viršuje – meniu */
-    .panel {
+    .panel{
       position: fixed;
       top: var(--gap);
       right: var(--gap);
       width: 230px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 14px;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:14px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     }
-
-    .panel h3 {
-      margin: 0 0 10px 0;
-      font-size: 16px;
-    }
-
-    select {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      background: #fff;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .note {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #444;
-      line-height: 1.35;
-    }
-
-    .badge {
-      display: inline-block;
-      margin-top: 10px;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: #eef2ff;
-      border: 1px solid #d9ddff;
-      color: #223;
-      word-break: break-word;
-    }
+    .panel h3 { margin:0 0 10px 0; font-size:16px; }
+    select{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #ccc; background:#fff; }
+    .badge{ display:inline-block; margin-top:10px; padding:6px 10px; border-radius:999px; background:#eef2ff; border:1px solid #d9ddff; font-size:12px; }
+    .note{ margin-top:10px; font-size:12px; color:#444; line-height:1.35; }
 
     @media (max-width: 820px) {
-      .map-area { right: var(--gap); bottom: 190px; }
-      .panel { width: auto; left: var(--gap); right: var(--gap); top: auto; bottom: var(--gap); }
+      .map-area { right: var(--gap); bottom: 160px; }
+      .panel { width:auto; left: var(--gap); right: var(--gap); top:auto; bottom: var(--gap); }
     }
   </style>
 </head>
 
 <body>
-  <div class="map-area">
-    <div id="map"></div>
-  </div>
+  <div class="map-area"><div id="map"></div></div>
 
   <div class="panel">
     <h3>Metai</h3>
-    <select id="yearSelect" aria-label="Pasirink metus">
+    <select id="yearSelect">
       <option value="2022" selected>2022</option>
       <option value="2023">2023</option>
       <option value="2024">2024</option>
@@ -103,46 +61,75 @@
     </select>
 
     <div class="badge" id="status">Rodomas: 2022</div>
-    <div class="badge" id="clickXY">Paskutinis paspaudimas: -</div>
 
     <div class="note">
-      JPG kelias: <b>assets/2022.jpg</b> ir t.t.<br>
-      GeoJSON kelias: <b>data/cities_2022.geojson</b> ir t.t.<br><br>
-      Koordinates gausi paspaudęs ant žemėlapio (x,y).
+      Paspausk ant <b>Vilnius</b> arba <b>Kaunas</b> objekto, kad pamatytum informaciją.
+      <br><br>
+      (Debug koordinačių rodymas išjungtas – jokie papildomi taškai nerodomi.)
     </div>
   </div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
     const yearSelect = document.getElementById("yearSelect");
     const status = document.getElementById("status");
-    const clickXY = document.getElementById("clickXY");
 
-    // 1) Pikselinė koordinačių sistema (JPG paveikslėliui)
     const map = L.map('map', {
       crs: L.CRS.Simple,
       minZoom: -2,
-      maxZoom: 4,
-      zoomControl: true
+      maxZoom: 4
     });
 
     let overlay = null;
-    let citiesLayer = null;
+    let clickRegions = L.layerGroup().addTo(map);
 
-    // 2) Paspaudimo koordinačių rodymas (čia tu „susirasi“ Vilnių ir Kauną)
-    map.on('click', (e) => {
-      const x = Math.round(e.latlng.lng); // x (į dešinę)
-      const y = Math.round(e.latlng.lat); // y (žemyn)
-      clickXY.textContent = `Paskutinis paspaudimas: x=${x}, y=${y}`;
-      console.log(`CLICK x=${x}, y=${y}`);
-    });
+    // Jei kada nors reikės laikinai susirasti koordinates – nustatyk true
+    const DEBUG_SHOW_CLICK_COORDS = false;
+
+    if (DEBUG_SHOW_CLICK_COORDS) {
+      map.on('click', (e) => {
+        const x = Math.round(e.latlng.lng);
+        const y = Math.round(e.latlng.lat);
+        console.log(`x=${x}, y=${y}`);
+        // laikinas vizualus taškas (DEBUG režimui)
+        L.circleMarker([y, x], { radius: 5 }).addTo(map);
+      });
+    }
+
+    function addInvisibleRegionPolygon(pointsXY, onClick) {
+      // Leaflet nori [y,x], o mes laikom [x,y]
+      const latlngs = pointsXY.map(([x,y]) => [y, x]);
+
+      const poly = L.polygon(latlngs, {
+        stroke: false,
+        fill: true,
+        fillOpacity: 0,   // nematomas
+        opacity: 0
+      });
+
+      poly.on('click', onClick);
+      poly.addTo(clickRegions);
+      return poly;
+    }
+
+    function addInvisibleRegionRect(x1, y1, x2, y2, onClick) {
+      // rect bounds: [[y1,x1],[y2,x2]]
+      const rect = L.rectangle([[y1, x1], [y2, x2]], {
+        stroke: false,
+        fill: true,
+        fillOpacity: 0,
+        opacity: 0
+      });
+      rect.on('click', onClick);
+      rect.addTo(clickRegions);
+      return rect;
+    }
 
     async function loadYear(year) {
       status.textContent = `Rodomas: ${year}`;
 
-      // 3) Užkraunam paveikslą ir sužinom jo dydį (pikseliais)
+      // 1) Užkraunam background JPG
       const imgUrl = `assets/${year}.jpg`;
       const img = new Image();
       img.src = imgUrl;
@@ -150,48 +137,51 @@
 
       const w = img.naturalWidth;
       const h = img.naturalHeight;
+      const bounds = [[0,0],[h,w]];
 
-      // bounds Leaflet'e yra [[y1,x1],[y2,x2]]
-      const bounds = [[0, 0], [h, w]];
-
-      // 4) Pakeičiam JPG overlay
       if (overlay) map.removeLayer(overlay);
       overlay = L.imageOverlay(imgUrl, bounds).addTo(map);
       map.fitBounds(bounds);
 
-      // 5) Užkraunam miestus iš GeoJSON (jei failas egzistuoja)
-      const geoUrl = `data/cities_${year}.geojson`;
+      // 2) Išvalom senas nematomas zonas
+      clickRegions.clearLayers();
 
-      if (citiesLayer) map.removeLayer(citiesLayer);
+      // 3) Sukuriam nematomas zonas (tik 2022 pavyzdys)
+      // TODO: čia įrašysi tikslias koordinates (pikseliais) pagal tavo paveikslą
 
-      try {
-        const res = await fetch(geoUrl);
-        if (!res.ok) throw new Error(`GeoJSON nerastas: ${geoUrl}`);
-        const geo = await res.json();
-
-        // GeoJSON Point coordinates: [x,y]
-        // Leaflet marker: [y,x]
-        citiesLayer = L.geoJSON(geo, {
-          pointToLayer: (feature) => {
-            const x = feature.geometry.coordinates[0];
-            const y = feature.geometry.coordinates[1];
-            return L.circleMarker([y, x], { radius: 7 });
-          },
-          onEachFeature: (feature, layer) => {
-            const p = feature.properties || {};
-            const name = p.name ?? "Miestas";
-            const pop = p.population ?? "n/a";
-            layer.bindPopup(`<b>${name}</b><br>Gyventojų sk.: ${pop}`);
+      if (year === "2022") {
+        // VILNIUS: trikampio zona (įrašyk 3 kampų [x,y] koordinates)
+        addInvisibleRegionPolygon(
+          [
+            // TODO: pakeisk šituos 3 taškus į savo trikampio kampus
+            [ 80,  210],  // kairys viršus
+            [ 80,  360],  // kairys apačia
+            [ 340, 360]   // dešinys apačia
+          ],
+          (e) => {
+            L.popup()
+              .setLatLng(e.latlng)
+              .setContent("<b>Vilnius</b><br>Gyventojų sk.: 592389")
+              .openOn(map);
           }
-        }).addTo(map);
-      } catch (err) {
-        console.warn(err.message);
+        );
+
+        // KAUNAS: stačiakampio zona (įrašyk 2 kampus: x1,y1 ir x2,y2)
+        addInvisibleRegionRect(
+          // TODO: pakeisk šituos skaičius į savo Kaunas stačiakampio ribas
+          700, 245,   // x1, y1 (viršutinis kairys)
+          900, 340,   // x2, y2 (apatinis dešinys)
+          (e) => {
+            L.popup()
+              .setLatLng(e.latlng)
+              .setContent("<b>Kaunas</b><br>Gyventojų sk.: 298753")
+              .openOn(map);
+          }
+        );
       }
     }
 
     yearSelect.addEventListener("change", () => loadYear(yearSelect.value));
-
-    // start
     loadYear("2022");
   </script>
 </body>
