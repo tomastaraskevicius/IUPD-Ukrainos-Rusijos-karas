@@ -1,10 +1,12 @@
+Žemiau pilnas `index.html` failas. Įvykių pavadinimai ir aprašai paimti iš tavo `historical_events.docx`, o sudėtingesni įvykiai sukonstruoti pagal modelį su keliomis vietomis arba didesne ikona; koordinates parinkau pagal tavo žemėlapio vietovardžius ir taisyklę battle ikoną dėti dešinėje nuo žalio vietovės taško.
+
 ```html
 <!doctype html>
 <html lang="lt">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Žemėlapiai pagal metus</title>
+  <title>Ukrainos karo žemėlapiai pagal metus</title>
 
   <link
     rel="stylesheet"
@@ -14,7 +16,7 @@
   <style>
     :root {
       --gap: 16px;
-      --panel-width: 230px;
+      --panel-width: 290px;
     }
 
     * {
@@ -90,7 +92,7 @@
       margin-top: 10px;
       font-size: 12px;
       color: #444;
-      line-height: 1.4;
+      line-height: 1.45;
     }
 
     button {
@@ -121,11 +123,67 @@
       resize: vertical;
     }
 
+    .legend {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #fafafa;
+      border: 1px solid #e5e5e5;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .legend-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #6aa84f;
+      flex: 0 0 auto;
+    }
+
+    .legend-icon {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
+    .popup-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      line-height: 1.25;
+    }
+
+    .popup-meta {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .popup-text {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .leaflet-popup-content {
+      min-width: 260px;
+      max-width: 320px;
+    }
+
     .leaflet-control-attribution {
       font-size: 11px;
     }
 
-    @media (max-width: 820px) {
+    @media (max-width: 980px) {
       :root {
         --panel-width: auto;
       }
@@ -160,19 +218,33 @@
 
     <div class="badge" id="status">Rodomas: 2022</div>
 
-    <button id="debugBtn">Debug: OFF</button>
     <button id="fitBtn">Rodyti visą žemėlapį</button>
+    <button id="debugBtn">Debug: OFF</button>
+
+    <div class="legend">
+      <div><b>Legenda</b></div>
+      <div class="legend-row">
+        <span class="legend-dot"></span>
+        <span>Vietovės taškas žemėlapyje</span>
+      </div>
+      <div class="legend-row">
+        <img class="legend-icon" src="assets/battle.png" alt="Battle" />
+        <span>Mūšio / įvykio ikona dešinėje nuo vietovės</span>
+      </div>
+    </div>
 
     <div class="note" id="hint">
-      Debug OFF: paspausk ant <b>Vilnius</b> arba <b>Kaunas</b> zonos (nematoma) – iššoks popup.
+      Gali laisvai <b>zoominti</b> ir <b>stumdyti</b> žemėlapį.
       <br><br>
-      Su pele gali laisvai <b>zoominti</b> ir <b>stumdyti</b> žemėlapį.
+      Paspaudus ant <b>battle</b> ikonos atsidarys detalus įvykio aprašymas.
+      <br><br>
+      Debug režimas paliktas koordinačių tikslinimui.
     </div>
 
     <textarea
       id="codeOut"
       readonly
-      placeholder="Kai Debug ON ir paspausi kampus – čia atsiras sugeneruotos koordinatės."
+      placeholder="Kai Debug ON ir paspausi žemėlapyje – čia atsiras koordinatės."
     ></textarea>
   </div>
 
@@ -183,7 +255,6 @@
     const status = document.getElementById("status");
     const debugBtn = document.getElementById("debugBtn");
     const fitBtn = document.getElementById("fitBtn");
-    const hint = document.getElementById("hint");
     const codeOut = document.getElementById("codeOut");
 
     const map = L.map("map", {
@@ -196,114 +267,18 @@
 
     let overlay = null;
     let currentBounds = null;
+    let DEBUG = false;
 
-    const clickRegions = L.layerGroup().addTo(map);
+    const eventLayer = L.layerGroup().addTo(map);
     const debugPointsLayer = L.layerGroup().addTo(map);
 
-    let VILNIUS_TRI = [
-      [58, 222],
-      [61, 111],
-      [263, 114]
-    ];
-
-    let KAUNAS_RECT = {
-      x1: 750, y1: 91,
-      x2: 902, y2: 174
-    };
-
-    let DEBUG = false;
-    let vilniusClicks = [];
-    let kaunasClicks = [];
-
-    function getRegionStyle() {
-      if (DEBUG) {
-        return {
-          color: "#ff0000",
-          weight: 3,
-          opacity: 0.9,
-          fill: true,
-          fillOpacity: 0.12
-        };
-      }
-
-      return {
-        color: "#000000",
-        weight: 0,
-        opacity: 0,
-        fill: true,
-        fillOpacity: 0
-      };
-    }
-
-    function showPopup(e, title, population) {
-      L.popup()
-        .setLatLng(e.latlng)
-        .setContent(`<b>${title}</b><br>Gyventojų sk.: ${population}`)
-        .openOn(map);
-    }
-
-    function addRegionPolygon(pointsXY, title, population) {
-      const latlngs = pointsXY.map(([x, y]) => [y, x]);
-      const poly = L.polygon(latlngs, getRegionStyle());
-      poly.on("click", (e) => showPopup(e, title, population));
-      poly.addTo(clickRegions);
-    }
-
-    function addRegionRect(x1, y1, x2, y2, title, population) {
-      const rect = L.rectangle([[y1, x1], [y2, x2]], getRegionStyle());
-      rect.on("click", (e) => showPopup(e, title, population));
-      rect.addTo(clickRegions);
-    }
-
-    function redrawRegions(year) {
-      clickRegions.clearLayers();
-
-      if (year === "2022") {
-        addRegionPolygon(VILNIUS_TRI, "Vilnius", 592389);
-        addRegionRect(
-          KAUNAS_RECT.x1,
-          KAUNAS_RECT.y1,
-          KAUNAS_RECT.x2,
-          KAUNAS_RECT.y2,
-          "Kaunas",
-          298753
-        );
-      }
-    }
-
-    function formatCodeSnippet() {
-      const tri = JSON.stringify(VILNIUS_TRI, null, 2);
-      const rect = JSON.stringify(KAUNAS_RECT, null, 2);
-
-      return `let VILNIUS_TRI = ${tri};
-
-let KAUNAS_RECT = ${rect};`;
-    }
-
-    function setHintText() {
-      if (!DEBUG) {
-        hint.innerHTML = `
-          Debug OFF: paspausk ant <b>Vilnius</b> arba <b>Kaunas</b> zonos (nematoma) – iššoks popup.
-          <br><br>
-          Su pele gali laisvai <b>zoominti</b> ir <b>stumdyti</b> žemėlapį.
-        `;
-        return;
-      }
-
-      hint.innerHTML = `
-        <b>Debug ON</b><br>
-        1) Paspausk <b>3 kartus</b> ant Vilnius trikampio kampų.<br>
-        2) Paspausk <b>2 kartus</b> ant Kaunas stačiakampio kampų.<br>
-        <br>
-        Su mygtuku <b>Rodyti visą žemėlapį</b> gali greitai grįžti į pilną vaizdą.
-      `;
-    }
-
-    function clearDebug() {
-      vilniusClicks = [];
-      kaunasClicks = [];
-      debugPointsLayer.clearLayers();
-      codeOut.value = "";
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Nepavyko užkrauti: ${src}`));
+        img.src = src;
+      });
     }
 
     function fitToImage() {
@@ -314,62 +289,75 @@ let KAUNAS_RECT = ${rect};`;
       });
     }
 
-    map.on("click", (e) => {
-      if (!DEBUG) return;
+    function clearDebug() {
+      debugPointsLayer.clearLayers();
+      codeOut.value = "";
+    }
 
-      const x = Math.round(e.latlng.lng);
-      const y = Math.round(e.latlng.lat);
+    function createBattleIcon(size = "normal") {
+      const iconSizeMap = {
+        small: [24, 24],
+        normal: [30, 30],
+        large: [40, 40]
+      };
 
-      L.circleMarker([y, x], { radius: 4 }).addTo(debugPointsLayer);
+      const iconSize = iconSizeMap[size] || iconSizeMap.normal;
 
-      if (vilniusClicks.length < 3) {
-        vilniusClicks.push([x, y]);
+      return L.icon({
+        iconUrl: "assets/battle.png",
+        iconSize,
+        iconAnchor: [iconSize[0] / 2, iconSize[1] / 2],
+        popupAnchor: [0, -12]
+      });
+    }
 
-        if (vilniusClicks.length === 3) {
-          VILNIUS_TRI = vilniusClicks.slice();
-          redrawRegions(yearSelect.value);
-          codeOut.value = formatCodeSnippet();
-        }
-        return;
-      }
+    function popupHtml(eventItem, loc) {
+      const places = eventItem.locations.map(item => item.place).join(", ");
+      const categoryMap = {
+        battle: "Mūšis",
+        siege: "Apgultis",
+        massacre: "Žudynės",
+        strike: "Smūgis",
+        offensive: "Puolimas / operacija",
+        liberation: "Išlaisvinimas",
+        frontline: "Fronto kovos",
+        naval: "Jūrinis / pakrantės įvykis",
+        sabotage: "Sabotažas / sprogimas"
+      };
 
-      if (kaunasClicks.length < 2) {
-        kaunasClicks.push([x, y]);
+      const categoryLabel = categoryMap[eventItem.type] || "Istorinis įvykis";
 
-        if (kaunasClicks.length === 2) {
-          const [a, b] = kaunasClicks;
-          const x1 = Math.min(a[0], b[0]);
-          const y1 = Math.min(a[1], b[1]);
-          const x2 = Math.max(a[0], b[0]);
-          const y2 = Math.max(a[1], b[1]);
+      return `
+        <div class="popup-title">${eventItem.title}</div>
+        <div class="popup-meta">
+          <b>Metai:</b> ${eventItem.year}<br>
+          <b>Tipas:</b> ${categoryLabel}<br>
+          <b>Vieta:</b> ${places}
+        </div>
+        <div class="popup-text">${eventItem.description}</div>
+      `;
+    }
 
-          KAUNAS_RECT = { x1, y1, x2, y2 };
-          redrawRegions(yearSelect.value);
-          codeOut.value = formatCodeSnippet();
-        }
-      }
-    });
+    function addEventMarker(eventItem, loc) {
+      const marker = L.marker([loc.y, loc.x], {
+        icon: createBattleIcon(eventItem.size || "normal"),
+        title: eventItem.title
+      });
 
-    debugBtn.addEventListener("click", () => {
-      DEBUG = !DEBUG;
-      debugBtn.textContent = `Debug: ${DEBUG ? "ON" : "OFF"}`;
-      clearDebug();
-      setHintText();
-      redrawRegions(yearSelect.value);
-    });
+      marker.bindPopup(popupHtml(eventItem, loc), {
+        maxWidth: 340
+      });
 
-    fitBtn.addEventListener("click", () => {
-      fitToImage();
-    });
+      marker.addTo(eventLayer);
+    }
 
-    function loadImage(src) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
+    function drawEvents(year) {
+      eventLayer.clearLayers();
 
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`Nepavyko užkrauti: ${src}`));
+      const selectedEvents = HISTORICAL_EVENTS.filter(item => item.year === year);
 
-        img.src = src;
+      selectedEvents.forEach(eventItem => {
+        eventItem.locations.forEach(loc => addEventMarker(eventItem, loc));
       });
     }
 
@@ -377,7 +365,6 @@ let KAUNAS_RECT = ${rect};`;
       status.textContent = `Rodomas: ${year}`;
 
       const imgUrl = `assets/${year}.jpg?v=${Date.now()}`;
-      console.log("Loading image:", imgUrl);
 
       try {
         const img = await loadImage(imgUrl);
@@ -400,26 +387,524 @@ let KAUNAS_RECT = ${rect};`;
 
         fitToImage();
         clearDebug();
-        redrawRegions(year);
-
-        console.log(`Loaded OK: ${year}`, { width: w, height: h });
+        drawEvents(year);
       } catch (err) {
         console.error(err);
         alert(err.message);
       }
     }
 
+    map.on("click", (e) => {
+      if (!DEBUG) return;
+
+      const x = Math.round(e.latlng.lng);
+      const y = Math.round(e.latlng.lat);
+
+      L.circleMarker([y, x], {
+        radius: 4,
+        color: "#ff0000",
+        weight: 2,
+        fillColor: "#ff0000",
+        fillOpacity: 0.8
+      }).addTo(debugPointsLayer);
+
+      codeOut.value += `x: ${x}, y: ${y}\n`;
+    });
+
+    debugBtn.addEventListener("click", () => {
+      DEBUG = !DEBUG;
+      debugBtn.textContent = `Debug: ${DEBUG ? "ON" : "OFF"}`;
+      clearDebug();
+    });
+
+    fitBtn.addEventListener("click", fitToImage);
+
     yearSelect.addEventListener("change", () => {
       loadYear(yearSelect.value);
     });
 
     window.addEventListener("resize", () => {
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 50);
+      setTimeout(() => map.invalidateSize(), 50);
     });
 
-    setHintText();
+    const HISTORICAL_EVENTS = [
+      // =========================
+      // 2022
+      // =========================
+      {
+        id: "hostomel-airport-2022",
+        year: "2022",
+        title: "Hostomelio oro uosto mūšis",
+        type: "battle",
+        size: "large",
+        locations: [
+          { place: "Hostomelis", x: 559, y: 400 }
+        ],
+        description: "Rusijos desantininkai bandė užimti strateginį oro uostą netoli Kyjivo, kad galėtų greitai permeti pajėgas. Ukraina atmušė puolimą ir sužlugdė planą užimti sostinę žaibiškai."
+      },
+      {
+        id: "kyiv-battle-2022",
+        year: "2022",
+        title: "Kyjivo mūšis (2022)",
+        type: "offensive",
+        size: "large",
+        locations: [
+          { place: "Hostomelis", x: 559, y: 400 },
+          { place: "Buča", x: 603, y: 452 },
+          { place: "Brovarai", x: 762, y: 437 },
+          { place: "Kyjivo sritis", x: 711, y: 495 }
+        ],
+        description: "Rusijos pajėgos bandė apsupti ir užimti sostinę. Kovo pabaigoje jos buvo priverstos atsitraukti iš šiaurinės Ukrainos."
+      },
+      {
+        id: "chernihiv-battle-2022",
+        year: "2022",
+        title: "Černihivo mūšis (2022)",
+        type: "battle",
+        size: "normal",
+        locations: [
+          { place: "Černihivas", x: 830, y: 259 }
+        ],
+        description: "Miestas buvo apsuptas ir intensyviai apšaudomas, bet neužimtas. Rusijos pajėgos atsitraukė balandį."
+      },
+      {
+        id: "sumy-battle-2022",
+        year: "2022",
+        title: "Sumų mūšis (2022)",
+        type: "battle",
+        size: "normal",
+        locations: [
+          { place: "Sumai", x: 1062, y: 329 }
+        ],
+        description: "Rusijos daliniai bandė įtvirtinti kontrolę pasienio srityje, bet susidūrė su pasipriešinimu ir atsitraukė."
+      },
+      {
+        id: "kharkiv-battle-2022",
+        year: "2022",
+        title: "Charkivo mūšis (2022)",
+        type: "battle",
+        size: "large",
+        locations: [
+          { place: "Charkovas", x: 1183, y: 398 }
+        ],
+        description: "Antrasis pagal dydį miestas buvo smarkiai bombarduojamas, tačiau Ukraina išlaikė kontrolę."
+      },
+      {
+        id: "mariupol-siege-2022",
+        year: "2022",
+        title: "Mariupolio apgultis",
+        type: "siege",
+        size: "large",
+        locations: [
+          { place: "Mariupolis", x: 1127, y: 734 }
+        ],
+        description: "Miestas buvo apsuptas ir beveik visiškai sunaikintas po kelis mėnesius trukusių kovų."
+      },
+      {
+        id: "azovstal-siege-2022",
+        year: "2022",
+        title: "Azovstalio apgultis",
+        type: "siege",
+        size: "normal",
+        locations: [
+          { place: "Mariupolis / Azovstalis", x: 1158, y: 743 }
+        ],
+        description: "Paskutiniai Mariupolio gynėjai laikėsi plieno gamykloje iki 2022 m. gegužės."
+      },
+      {
+        id: "bucha-massacre-2022",
+        year: "2022",
+        title: "Bučos žudynės",
+        type: "massacre",
+        size: "large",
+        locations: [
+          { place: "Buča", x: 603, y: 452 }
+        ],
+        description: "Po Rusijos atsitraukimo rasti nužudytų civilių kūnai, sukėlę tarptautinį pasipiktinimą."
+      },
+      {
+        id: "snake-island-battle-2022",
+        year: "2022",
+        title: "Gyvačių salos mūšis",
+        type: "naval",
+        size: "normal",
+        locations: [
+          { place: "Gyvačių sala", x: 732, y: 690 }
+        ],
+        description: "Strateginė sala Juodojoje jūroje kelis kartus keitė kontrolę; birželį Rusija pasitraukė."
+      },
+      {
+        id: "severodonetsk-battle-2022",
+        year: "2022",
+        title: "Severodonecko mūšis",
+        type: "battle",
+        size: "normal",
+        locations: [
+          { place: "Severodoneckas", x: 1377, y: 478 }
+        ],
+        description: "Intensyvios gatvių kovos baigėsi miesto užėmimu Rusijos."
+      },
+      {
+        id: "lysychansk-battle-2022",
+        year: "2022",
+        title: "Lysyčansko mūšis",
+        type: "battle",
+        size: "normal",
+        locations: [
+          { place: "Lysyčanskas", x: 1315, y: 478 }
+        ],
+        description: "Užėmus miestą, Rusija perėmė beveik visą Luhansko sritį."
+      },
+      {
+        id: "kremenchuk-mall-strike-2022",
+        year: "2022",
+        title: "Kremenčuko prekybos centro bombardavimas",
+        type: "strike",
+        size: "normal",
+        locations: [
+          { place: "Kremenčugas", x: 972, y: 458 }
+        ],
+        description: "Raketos smūgis prekybos centrui nusinešė daug civilių gyvybių."
+      },
+      {
+        id: "vinnytsia-strike-2022",
+        year: "2022",
+        title: "Vinicos raketų smūgis (2022)",
+        type: "strike",
+        size: "normal",
+        locations: [
+          { place: "Vinica", x: 592, y: 452 }
+        ],
+        description: "Ataka miesto centre sukėlė didelius civilių nuostolius."
+      },
+      {
+        id: "kharkiv-counteroffensive-2022",
+        year: "2022",
+        title: "Charkivo kontrpuolimas (2022)",
+        type: "offensive",
+        size: "large",
+        locations: [
+          { place: "Charkivas", x: 1183, y: 398 },
+          { place: "Iziumas", x: 1267, y: 453 },
+          { place: "Kupjanskas", x: 1132, y: 341 }
+        ],
+        description: "Ukraina greitai pralaužė frontą ir atsiėmė dideles teritorijas."
+      },
+      {
+        id: "izium-liberation-2022",
+        year: "2022",
+        title: "Iziumo išlaisvinimas",
+        type: "liberation",
+        size: "normal",
+        locations: [
+          { place: "Iziumas", x: 1267, y: 453 }
+        ],
+        description: "Strateginis logistikos centras buvo susigrąžintas per kontrpuolimą."
+      },
+      {
+        id: "lyman-liberation-2022",
+        year: "2022",
+        title: "Lymano išlaisvinimas",
+        type: "liberation",
+        size: "normal",
+        locations: [
+          { place: "Lymanas", x: 1264, y: 511 }
+        ],
+        description: "Ukraina atkovojo svarbų transporto mazgą Donecko srityje."
+      },
+      {
+        id: "crimea-bridge-explosion-2022",
+        year: "2022",
+        title: "Krymo tilto sprogimas",
+        type: "sabotage",
+        size: "large",
+        locations: [
+          { place: "Krymo tiltas", x: 1460, y: 797 }
+        ],
+        description: "Sprogimas smarkiai apgadino tiltą, jungiantį Krymą su Rusija."
+      },
+      {
+        id: "kherson-liberation-2022",
+        year: "2022",
+        title: "Chersono išlaisvinimas",
+        type: "liberation",
+        size: "large",
+        locations: [
+          { place: "Chersonas", x: 915, y: 602 }
+        ],
+        description: "Rusija atsitraukė iš dešiniojo Dnipro kranto; Ukraina susigrąžino srities centrą."
+      },
+
+      // =========================
+      // 2023
+      // =========================
+      {
+        id: "soledar-battle-2023",
+        year: "2023",
+        title: "Soledaro mūšis",
+        type: "battle",
+        size: "normal",
+        locations: [
+          { place: "Soledaras", x: 1312, y: 516 }
+        ],
+        description: "Miestą užėmė Rusijos pajėgos po sunkių kovų."
+      },
+      {
+        id: "bakhmut-battle-2023",
+        year: "2023",
+        title: "Bachmuto mūšis",
+        type: "battle",
+        size: "large",
+        locations: [
+          { place: "Bachmutas", x: 1322, y: 542 }
+        ],
+        description: "Ilgiausias ir kruviniausias mūšis Donbase, miestas užimtas 2023 m. gegužę."
+      },
+      {
+        id: "vuhledar-battle-2023",
+        year: "2023",
+        title: "Vuhledaro mūšis (2023)",
+        type: "battle",
+        size: "normal",
+        locations: [
+          { place: "Vuhledaras", x: 1222, y: 650 }
+        ],
+        description: "Rusijos šarvuotosios atakos patyrė didelių nuostolių."
+      },
+      {
+        id: "kakhovka-dam-2023",
+        year: "2023",
+        title: "Kachovkos užtvankos susprogdinimas",
+        type: "strike",
+        size: "large",
+        locations: [
+          { place: "Naujoji Kachovka", x: 1011, y: 617 }
+        ],
+        description: "Sugriovus užtvanką, kilo didelis potvynis Dnipro žemupyje."
+      },
+      {
+        id: "zaporizhzhia-counteroffensive-2023",
+        year: "2023",
+        title: "Zaporižės krypties kontrpuolimas",
+        type: "offensive",
+        size: "large",
+        locations: [
+          { place: "Robotynė", x: 1118, y: 556 },
+          { place: "Zaporižė", x: 1137, y: 523 },
+          { place: "Tokmako kryptis", x: 1096, y: 612 }
+        ],
+        description: "Ukraina bandė pralaužti giliai įtvirtintas Rusijos gynybos linijas."
+      },
+      {
+        id: "robotyne-liberation-2023",
+        year: "2023",
+        title: "Robotynės išlaisvinimas",
+        type: "liberation",
+        size: "normal",
+        locations: [
+          { place: "Robotynė", x: 1118, y: 556 }
+        ],
+        description: "Nedidelė gyvenvietė tapo vienu iš kontrpuolimo pasiekimų."
+      },
+      {
+        id: "crimea-strikes-sevastopol-2023",
+        year: "2023",
+        title: "Smūgiai Krymui (Sevastopolis)",
+        type: "strike",
+        size: "large",
+        locations: [
+          { place: "Sevastopolis", x: 962, y: 798 }
+        ],
+        description: "Ukrainos atakos taikėsi į Juodosios jūros laivyną ir oro bazes."
+      },
+      {
+        id: "atacms-berdiansk-luhansk-2023",
+        year: "2023",
+        title: "ATACMS smūgiai Berdianskui ir Luhanskui",
+        type: "strike",
+        size: "large",
+        locations: [
+          { place: "Berdianskas", x: 1230, y: 648 },
+          { place: "Luhanskas", x: 1428, y: 452 }
+        ],
+        description: "Ilgo nuotolio raketos sunaikino orlaivius aerodromuose."
+      },
+      {
+        id: "odesa-port-shelling-2023",
+        year: "2023",
+        title: "Odesos uostų apšaudymas",
+        type: "strike",
+        size: "normal",
+        locations: [
+          { place: "Odesa", x: 713, y: 641 }
+        ],
+        description: "Rusija intensyviai atakavo grūdų eksporto infrastruktūrą."
+      },
+      {
+        id: "avdiivka-offensive-start-2023",
+        year: "2023",
+        title: "Avdijivkos puolimo pradžia",
+        type: "offensive",
+        size: "large",
+        locations: [
+          { place: "Avdijivka", x: 1267, y: 552 }
+        ],
+        description: "Rusija pradėjo plataus masto puolimą aplink miestą."
+      },
+      {
+        id: "dnipro-left-bank-operations-2023",
+        year: "2023",
+        title: "Operacijos kairiajame Dnipro krante",
+        type: "offensive",
+        size: "normal",
+        locations: [
+          { place: "Chersono sritis", x: 918, y: 602 },
+          { place: "Kairysis Dnipro krantas", x: 974, y: 600 },
+          { place: "Placdarmų zona", x: 1002, y: 603 }
+        ],
+        description: "Ukraina įsitvirtino keliuose placdarmuose Chersono srityje."
+      },
+
+      // =========================
+      // 2024
+      // =========================
+      {
+        id: "avdiivka-battle-2024",
+        year: "2024",
+        title: "Avdijivkos mūšis",
+        type: "battle",
+        size: "large",
+        locations: [
+          { place: "Avdijivka", x: 1267, y: 552 }
+        ],
+        description: "Po mėnesių kovų Rusija užėmė miestą."
+      },
+      {
+        id: "advance-oceretyne-2024",
+        year: "2024",
+        title: "Puolimas link Očeretyne",
+        type: "offensive",
+        size: "normal",
+        locations: [
+          { place: "Očeretynė", x: 1096, y: 579 },
+          { place: "Avdijivkos vakarai", x: 1222, y: 564 }
+        ],
+        description: "Rusija plėtė kontrolę į vakarus nuo Avdijivkos."
+      },
+      {
+        id: "kharkiv-region-offensive-2024",
+        year: "2024",
+        title: "Puolimas Charkivo srityje (2024 gegužė)",
+        type: "offensive",
+        size: "large",
+        locations: [
+          { place: "Vovčansko kryptis", x: 1218, y: 342 },
+          { place: "Charkivo sritis", x: 1183, y: 398 }
+        ],
+        description: "Rusija pradėjo naują operaciją Vovčansko kryptimi."
+      },
+      {
+        id: "chasiv-yar-battles-2024",
+        year: "2024",
+        title: "Mūšiai prie Časiv Jaro",
+        type: "battle",
+        size: "large",
+        locations: [
+          { place: "Časiv Jaras", x: 1118, y: 493 }
+        ],
+        description: "Strategiškai svarbi aukštuma tapo intensyvių kovų zona."
+      },
+      {
+        id: "crimea-air-bases-2024",
+        year: "2024",
+        title: "Smūgiai Krymo oro bazėms",
+        type: "strike",
+        size: "large",
+        locations: [
+          { place: "Krymas", x: 1044, y: 742 },
+          { place: "Sevastopolis", x: 962, y: 798 }
+        ],
+        description: "Atakos prieš Rusijos aviacijos infrastruktūrą."
+      },
+      {
+        id: "zaporizhzhia-front-2024",
+        year: "2024",
+        title: "Kovos Zaporižės fronte (2024)",
+        type: "frontline",
+        size: "normal",
+        locations: [
+          { place: "Zaporižė", x: 1137, y: 523 },
+          { place: "Robotynė", x: 1118, y: 556 },
+          { place: "Pietinis ruožas", x: 1096, y: 612 }
+        ],
+        description: "Abi pusės vykdė lokalius puolimus ir kontratakas."
+      },
+      {
+        id: "kyiv-air-defense-2024",
+        year: "2024",
+        title: "Oro gynybos mūšiai virš Kyjivo (2024)",
+        type: "strike",
+        size: "large",
+        locations: [
+          { place: "Kyjivo sritis", x: 711, y: 495 }
+        ],
+        description: "Intensyvios raketų ir dronų atakos prieš sostinę."
+      },
+      {
+        id: "black-sea-fleet-crimea-2024",
+        year: "2024",
+        title: "Atakos prieš Juodosios jūros laivyną Kryme",
+        type: "naval",
+        size: "large",
+        locations: [
+          { place: "Sevastopolis", x: 962, y: 798 }
+        ],
+        description: "Smūgiai laivams ir infrastruktūrai Sevastopolyje."
+      },
+
+      // =========================
+      // 2025
+      // =========================
+      {
+        id: "donetsk-positional-fights-2025",
+        year: "2025",
+        title: "Pozicinės kovos Donecko srityje",
+        type: "frontline",
+        size: "large",
+        locations: [
+          { place: "Avdijivkos ruožas", x: 1267, y: 552 },
+          { place: "Časiv Jaro ruožas", x: 1118, y: 493 },
+          { place: "Donecko sritis", x: 1288, y: 541 }
+        ],
+        description: "Frontas juda lėtai, vyksta nuolatinės artilerijos dvikovos."
+      },
+      {
+        id: "zaporizhzhia-line-2025",
+        year: "2025",
+        title: "Kovos Zaporižės linijoje (2025)",
+        type: "frontline",
+        size: "normal",
+        locations: [
+          { place: "Zaporižė", x: 1137, y: 523 },
+          { place: "Robotynė", x: 1118, y: 556 },
+          { place: "Pietinė linija", x: 1096, y: 612 }
+        ],
+        description: "Lokalūs puolimai ir gynybinės operacijos."
+      },
+      {
+        id: "luhansk-svatove-kreminna-2025",
+        year: "2025",
+        title: "Kovos Luhansko srityje (Svatovė–Kreminna)",
+        type: "frontline",
+        size: "normal",
+        locations: [
+          { place: "Svatovė–Kreminna kryptis", x: 1318, y: 426 },
+          { place: "Luhansko sritis", x: 1428, y: 452 }
+        ],
+        description: "Miškingose vietovėse vyksta nuolatiniai susirėmimai."
+      }
+    ];
+
     loadYear("2022");
   </script>
 </body>
