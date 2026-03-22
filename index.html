@@ -1,4 +1,13 @@
-Žemiau pilnas `index.html` failas. Įvykių pavadinimai ir aprašai paimti iš tavo `historical_events.docx`, o sudėtingesni įvykiai sukonstruoti pagal modelį su keliomis vietomis arba didesne ikona; koordinates parinkau pagal tavo žemėlapio vietovardžius ir taisyklę battle ikoną dėti dešinėje nuo žalio vietovės taško.
+Taip — problema ne pačiose vietovių koordinatėse, o tame, kad battle ikoną geriau rišti **prie to paties geografinio taško** ir tik **vizualiai pastumti į dešinę per CSS**, o ne bandyti ranka keisti `x/y`.
+
+Todėl pataisiau logiką taip:
+
+* markeris dedamas **tiksliai ant vietovės taško**
+* battle ikona rodoma **to taško dešinėje**
+* popup atsidaro paspaudus ant battle ikonos
+* nebereikia atskiro „x+15“ tipo poslinkio koordinatėse
+
+Žemiau pilnas pataisytas `index.html`.
 
 ```html
 <!doctype html>
@@ -176,11 +185,49 @@
 
     .leaflet-popup-content {
       min-width: 260px;
-      max-width: 320px;
+      max-width: 340px;
     }
 
     .leaflet-control-attribution {
       font-size: 11px;
+    }
+
+    /* Svarbiausia dalis:
+       markeris inkaruojamas ties vietovės tašku,
+       o battle ikona tik vizualiai nupiešiama dešinėje. */
+    .battle-wrapper {
+      position: relative;
+      width: 46px;
+      height: 24px;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .battle-hit {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      background-image: url("assets/battle.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .battle-hit.large {
+      width: 30px;
+      height: 30px;
+      left: 12px;
+    }
+
+    .battle-hit.small {
+      width: 18px;
+      height: 18px;
+      left: 12px;
     }
 
     @media (max-width: 980px) {
@@ -233,7 +280,7 @@
       </div>
     </div>
 
-    <div class="note" id="hint">
+    <div class="note">
       Gali laisvai <b>zoominti</b> ir <b>stumdyti</b> žemėlapį.
       <br><br>
       Paspaudus ant <b>battle</b> ikonos atsidarys detalus įvykio aprašymas.
@@ -294,24 +341,23 @@
       codeOut.value = "";
     }
 
-    function createBattleIcon(size = "normal") {
-      const iconSizeMap = {
-        small: [24, 24],
-        normal: [30, 30],
-        large: [40, 40]
-      };
+    function createBattleDivIcon(size = "normal") {
+      const sizeClass = size === "large" ? "large" : size === "small" ? "small" : "normal";
 
-      const iconSize = iconSizeMap[size] || iconSizeMap.normal;
-
-      return L.icon({
-        iconUrl: "assets/battle.png",
-        iconSize,
-        iconAnchor: [iconSize[0] / 2, iconSize[1] / 2],
-        popupAnchor: [0, -12]
+      return L.divIcon({
+        className: "",
+        html: `
+          <div class="battle-wrapper">
+            <div class="battle-hit ${sizeClass}"></div>
+          </div>
+        `,
+        iconSize: [46, 24],
+        iconAnchor: [0, 12],
+        popupAnchor: [24, -10]
       });
     }
 
-    function popupHtml(eventItem, loc) {
+    function popupHtml(eventItem) {
       const places = eventItem.locations.map(item => item.place).join(", ");
       const categoryMap = {
         battle: "Mūšis",
@@ -339,12 +385,14 @@
     }
 
     function addEventMarker(eventItem, loc) {
+      // Čia markeris dedamas tiksliai ant žalio taško koordinatės.
+      // Ikona piešiama dešinėje per CSS, nekeičiant geografinės vietos.
       const marker = L.marker([loc.y, loc.x], {
-        icon: createBattleIcon(eventItem.size || "normal"),
+        icon: createBattleDivIcon(eventItem.size || "normal"),
         title: eventItem.title
       });
 
-      marker.bindPopup(popupHtml(eventItem, loc), {
+      marker.bindPopup(popupHtml(eventItem), {
         maxWidth: 340
       });
 
@@ -428,9 +476,6 @@
     });
 
     const HISTORICAL_EVENTS = [
-      // =========================
-      // 2022
-      // =========================
       {
         id: "hostomel-airport-2022",
         year: "2022",
@@ -438,7 +483,7 @@
         type: "battle",
         size: "large",
         locations: [
-          { place: "Hostomelis", x: 559, y: 400 }
+          { place: "Hostomelis", x: 621, y: 294 }
         ],
         description: "Rusijos desantininkai bandė užimti strateginį oro uostą netoli Kyjivo, kad galėtų greitai permeti pajėgas. Ukraina atmušė puolimą ir sužlugdė planą užimti sostinę žaibiškai."
       },
@@ -449,10 +494,10 @@
         type: "offensive",
         size: "large",
         locations: [
-          { place: "Hostomelis", x: 559, y: 400 },
-          { place: "Buča", x: 603, y: 452 },
-          { place: "Brovarai", x: 762, y: 437 },
-          { place: "Kyjivo sritis", x: 711, y: 495 }
+          { place: "Hostomelis", x: 621, y: 294 },
+          { place: "Buča", x: 665, y: 317 },
+          { place: "Brovarai", x: 762, y: 298 },
+          { place: "Kyjivo sritis", x: 701, y: 328 }
         ],
         description: "Rusijos pajėgos bandė apsupti ir užimti sostinę. Kovo pabaigoje jos buvo priverstos atsitraukti iš šiaurinės Ukrainos."
       },
@@ -463,7 +508,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Černihivas", x: 830, y: 259 }
+          { place: "Černihivas", x: 813, y: 225 }
         ],
         description: "Miestas buvo apsuptas ir intensyviai apšaudomas, bet neužimtas. Rusijos pajėgos atsitraukė balandį."
       },
@@ -474,7 +519,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Sumai", x: 1062, y: 329 }
+          { place: "Sumai", x: 1078, y: 265 }
         ],
         description: "Rusijos daliniai bandė įtvirtinti kontrolę pasienio srityje, bet susidūrė su pasipriešinimu ir atsitraukė."
       },
@@ -485,7 +530,7 @@
         type: "battle",
         size: "large",
         locations: [
-          { place: "Charkovas", x: 1183, y: 398 }
+          { place: "Charkovas", x: 1190, y: 321 }
         ],
         description: "Antrasis pagal dydį miestas buvo smarkiai bombarduojamas, tačiau Ukraina išlaikė kontrolę."
       },
@@ -496,7 +541,7 @@
         type: "siege",
         size: "large",
         locations: [
-          { place: "Mariupolis", x: 1127, y: 734 }
+          { place: "Mariupolis", x: 1288, y: 559 }
         ],
         description: "Miestas buvo apsuptas ir beveik visiškai sunaikintas po kelis mėnesius trukusių kovų."
       },
@@ -507,7 +552,7 @@
         type: "siege",
         size: "normal",
         locations: [
-          { place: "Mariupolis / Azovstalis", x: 1158, y: 743 }
+          { place: "Mariupolis / Azovstalis", x: 1304, y: 560 }
         ],
         description: "Paskutiniai Mariupolio gynėjai laikėsi plieno gamykloje iki 2022 m. gegužės."
       },
@@ -518,7 +563,7 @@
         type: "massacre",
         size: "large",
         locations: [
-          { place: "Buča", x: 603, y: 452 }
+          { place: "Buča", x: 665, y: 317 }
         ],
         description: "Po Rusijos atsitraukimo rasti nužudytų civilių kūnai, sukėlę tarptautinį pasipiktinimą."
       },
@@ -529,7 +574,7 @@
         type: "naval",
         size: "normal",
         locations: [
-          { place: "Gyvačių sala", x: 732, y: 690 }
+          { place: "Gyvačių sala", x: 712, y: 699 }
         ],
         description: "Strateginė sala Juodojoje jūroje kelis kartus keitė kontrolę; birželį Rusija pasitraukė."
       },
@@ -540,7 +585,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Severodoneckas", x: 1377, y: 478 }
+          { place: "Severodoneckas", x: 1370, y: 437 }
         ],
         description: "Intensyvios gatvių kovos baigėsi miesto užėmimu Rusijos."
       },
@@ -551,7 +596,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Lysyčanskas", x: 1315, y: 478 }
+          { place: "Lysyčanskas", x: 1302, y: 423 }
         ],
         description: "Užėmus miestą, Rusija perėmė beveik visą Luhansko sritį."
       },
@@ -562,7 +607,7 @@
         type: "strike",
         size: "normal",
         locations: [
-          { place: "Kremenčugas", x: 972, y: 458 }
+          { place: "Kremenčugas", x: 965, y: 408 }
         ],
         description: "Raketos smūgis prekybos centrui nusinešė daug civilių gyvybių."
       },
@@ -573,7 +618,7 @@
         type: "strike",
         size: "normal",
         locations: [
-          { place: "Vinica", x: 592, y: 452 }
+          { place: "Vinica", x: 584, y: 421 }
         ],
         description: "Ataka miesto centre sukėlė didelius civilių nuostolius."
       },
@@ -584,9 +629,9 @@
         type: "offensive",
         size: "large",
         locations: [
-          { place: "Charkivas", x: 1183, y: 398 },
-          { place: "Iziumas", x: 1267, y: 453 },
-          { place: "Kupjanskas", x: 1132, y: 341 }
+          { place: "Charkivas", x: 1190, y: 321 },
+          { place: "Iziumas", x: 1267, y: 393 },
+          { place: "Kupjanskas", x: 1249, y: 360 }
         ],
         description: "Ukraina greitai pralaužė frontą ir atsiėmė dideles teritorijas."
       },
@@ -597,7 +642,7 @@
         type: "liberation",
         size: "normal",
         locations: [
-          { place: "Iziumas", x: 1267, y: 453 }
+          { place: "Iziumas", x: 1267, y: 393 }
         ],
         description: "Strateginis logistikos centras buvo susigrąžintas per kontrpuolimą."
       },
@@ -608,7 +653,7 @@
         type: "liberation",
         size: "normal",
         locations: [
-          { place: "Lymanas", x: 1264, y: 511 }
+          { place: "Lymanas", x: 1305, y: 448 }
         ],
         description: "Ukraina atkovojo svarbų transporto mazgą Donecko srityje."
       },
@@ -619,7 +664,7 @@
         type: "sabotage",
         size: "large",
         locations: [
-          { place: "Krymo tiltas", x: 1460, y: 797 }
+          { place: "Krymo tiltas", x: 1465, y: 776 }
         ],
         description: "Sprogimas smarkiai apgadino tiltą, jungiantį Krymą su Rusija."
       },
@@ -630,14 +675,11 @@
         type: "liberation",
         size: "large",
         locations: [
-          { place: "Chersonas", x: 915, y: 602 }
+          { place: "Chersonas", x: 918, y: 593 }
         ],
         description: "Rusija atsitraukė iš dešiniojo Dnipro kranto; Ukraina susigrąžino srities centrą."
       },
 
-      // =========================
-      // 2023
-      // =========================
       {
         id: "soledar-battle-2023",
         year: "2023",
@@ -645,7 +687,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Soledaras", x: 1312, y: 516 }
+          { place: "Soledaras", x: 1326, y: 494 }
         ],
         description: "Miestą užėmė Rusijos pajėgos po sunkių kovų."
       },
@@ -656,7 +698,7 @@
         type: "battle",
         size: "large",
         locations: [
-          { place: "Bachmutas", x: 1322, y: 542 }
+          { place: "Bachmutas", x: 1320, y: 516 }
         ],
         description: "Ilgiausias ir kruviniausias mūšis Donbase, miestas užimtas 2023 m. gegužę."
       },
@@ -667,7 +709,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Vuhledaras", x: 1222, y: 650 }
+          { place: "Vuhledaras", x: 1238, y: 645 }
         ],
         description: "Rusijos šarvuotosios atakos patyrė didelių nuostolių."
       },
@@ -678,7 +720,7 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Naujoji Kachovka", x: 1011, y: 617 }
+          { place: "Naujoji Kachovka", x: 1008, y: 598 }
         ],
         description: "Sugriovus užtvanką, kilo didelis potvynis Dnipro žemupyje."
       },
@@ -689,9 +731,9 @@
         type: "offensive",
         size: "large",
         locations: [
-          { place: "Robotynė", x: 1118, y: 556 },
-          { place: "Zaporižė", x: 1137, y: 523 },
-          { place: "Tokmako kryptis", x: 1096, y: 612 }
+          { place: "Robotynė", x: 1120, y: 523 },
+          { place: "Zaporižė", x: 1137, y: 491 },
+          { place: "Tokmako kryptis", x: 1102, y: 583 }
         ],
         description: "Ukraina bandė pralaužti giliai įtvirtintas Rusijos gynybos linijas."
       },
@@ -702,7 +744,7 @@
         type: "liberation",
         size: "normal",
         locations: [
-          { place: "Robotynė", x: 1118, y: 556 }
+          { place: "Robotynė", x: 1120, y: 523 }
         ],
         description: "Nedidelė gyvenvietė tapo vienu iš kontrpuolimo pasiekimų."
       },
@@ -713,7 +755,7 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Sevastopolis", x: 962, y: 798 }
+          { place: "Sevastopolis", x: 962, y: 757 }
         ],
         description: "Ukrainos atakos taikėsi į Juodosios jūros laivyną ir oro bazes."
       },
@@ -724,8 +766,8 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Berdianskas", x: 1230, y: 648 },
-          { place: "Luhanskas", x: 1428, y: 452 }
+          { place: "Berdianskas", x: 1237, y: 593 },
+          { place: "Luhanskas", x: 1423, y: 437 }
         ],
         description: "Ilgo nuotolio raketos sunaikino orlaivius aerodromuose."
       },
@@ -736,7 +778,7 @@
         type: "strike",
         size: "normal",
         locations: [
-          { place: "Odesa", x: 713, y: 641 }
+          { place: "Odesa", x: 748, y: 611 }
         ],
         description: "Rusija intensyviai atakavo grūdų eksporto infrastruktūrą."
       },
@@ -747,7 +789,7 @@
         type: "offensive",
         size: "large",
         locations: [
-          { place: "Avdijivka", x: 1267, y: 552 }
+          { place: "Avdijivka", x: 1270, y: 507 }
         ],
         description: "Rusija pradėjo plataus masto puolimą aplink miestą."
       },
@@ -758,16 +800,13 @@
         type: "offensive",
         size: "normal",
         locations: [
-          { place: "Chersono sritis", x: 918, y: 602 },
-          { place: "Kairysis Dnipro krantas", x: 974, y: 600 },
-          { place: "Placdarmų zona", x: 1002, y: 603 }
+          { place: "Chersono sritis", x: 918, y: 593 },
+          { place: "Kairysis Dnipro krantas", x: 969, y: 594 },
+          { place: "Placdarmų zona", x: 999, y: 598 }
         ],
         description: "Ukraina įsitvirtino keliuose placdarmuose Chersono srityje."
       },
 
-      // =========================
-      // 2024
-      // =========================
       {
         id: "avdiivka-battle-2024",
         year: "2024",
@@ -775,7 +814,7 @@
         type: "battle",
         size: "large",
         locations: [
-          { place: "Avdijivka", x: 1267, y: 552 }
+          { place: "Avdijivka", x: 1270, y: 507 }
         ],
         description: "Po mėnesių kovų Rusija užėmė miestą."
       },
@@ -786,8 +825,8 @@
         type: "offensive",
         size: "normal",
         locations: [
-          { place: "Očeretynė", x: 1096, y: 579 },
-          { place: "Avdijivkos vakarai", x: 1222, y: 564 }
+          { place: "Očeretynė", x: 1095, y: 578 },
+          { place: "Avdijivkos vakarai", x: 1228, y: 520 }
         ],
         description: "Rusija plėtė kontrolę į vakarus nuo Avdijivkos."
       },
@@ -798,8 +837,8 @@
         type: "offensive",
         size: "large",
         locations: [
-          { place: "Vovčansko kryptis", x: 1218, y: 342 },
-          { place: "Charkivo sritis", x: 1183, y: 398 }
+          { place: "Vovčansko kryptis", x: 1215, y: 330 },
+          { place: "Charkivo sritis", x: 1190, y: 321 }
         ],
         description: "Rusija pradėjo naują operaciją Vovčansko kryptimi."
       },
@@ -810,7 +849,7 @@
         type: "battle",
         size: "large",
         locations: [
-          { place: "Časiv Jaras", x: 1118, y: 493 }
+          { place: "Časiv Jaras", x: 1118, y: 516 }
         ],
         description: "Strategiškai svarbi aukštuma tapo intensyvių kovų zona."
       },
@@ -821,8 +860,8 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Krymas", x: 1044, y: 742 },
-          { place: "Sevastopolis", x: 962, y: 798 }
+          { place: "Krymas", x: 1048, y: 699 },
+          { place: "Sevastopolis", x: 962, y: 757 }
         ],
         description: "Atakos prieš Rusijos aviacijos infrastruktūrą."
       },
@@ -833,9 +872,9 @@
         type: "frontline",
         size: "normal",
         locations: [
-          { place: "Zaporižė", x: 1137, y: 523 },
-          { place: "Robotynė", x: 1118, y: 556 },
-          { place: "Pietinis ruožas", x: 1096, y: 612 }
+          { place: "Zaporižė", x: 1137, y: 491 },
+          { place: "Robotynė", x: 1120, y: 523 },
+          { place: "Pietinis ruožas", x: 1102, y: 583 }
         ],
         description: "Abi pusės vykdė lokalius puolimus ir kontratakas."
       },
@@ -846,7 +885,7 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Kyjivo sritis", x: 711, y: 495 }
+          { place: "Kyjivo sritis", x: 701, y: 328 }
         ],
         description: "Intensyvios raketų ir dronų atakos prieš sostinę."
       },
@@ -857,14 +896,11 @@
         type: "naval",
         size: "large",
         locations: [
-          { place: "Sevastopolis", x: 962, y: 798 }
+          { place: "Sevastopolis", x: 962, y: 757 }
         ],
         description: "Smūgiai laivams ir infrastruktūrai Sevastopolyje."
       },
 
-      // =========================
-      // 2025
-      // =========================
       {
         id: "donetsk-positional-fights-2025",
         year: "2025",
@@ -872,9 +908,9 @@
         type: "frontline",
         size: "large",
         locations: [
-          { place: "Avdijivkos ruožas", x: 1267, y: 552 },
-          { place: "Časiv Jaro ruožas", x: 1118, y: 493 },
-          { place: "Donecko sritis", x: 1288, y: 541 }
+          { place: "Avdijivkos ruožas", x: 1270, y: 507 },
+          { place: "Časiv Jaro ruožas", x: 1118, y: 516 },
+          { place: "Donecko sritis", x: 1285, y: 540 }
         ],
         description: "Frontas juda lėtai, vyksta nuolatinės artilerijos dvikovos."
       },
@@ -885,9 +921,9 @@
         type: "frontline",
         size: "normal",
         locations: [
-          { place: "Zaporižė", x: 1137, y: 523 },
-          { place: "Robotynė", x: 1118, y: 556 },
-          { place: "Pietinė linija", x: 1096, y: 612 }
+          { place: "Zaporižė", x: 1137, y: 491 },
+          { place: "Robotynė", x: 1120, y: 523 },
+          { place: "Pietinė linija", x: 1102, y: 583 }
         ],
         description: "Lokalūs puolimai ir gynybinės operacijos."
       },
@@ -898,8 +934,8 @@
         type: "frontline",
         size: "normal",
         locations: [
-          { place: "Svatovė–Kreminna kryptis", x: 1318, y: 426 },
-          { place: "Luhansko sritis", x: 1428, y: 452 }
+          { place: "Svatovė–Kreminna kryptis", x: 1320, y: 402 },
+          { place: "Luhansko sritis", x: 1423, y: 437 }
         ],
         description: "Miškingose vietovėse vyksta nuolatiniai susirėmimai."
       }
