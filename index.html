@@ -1,15 +1,3 @@
-Taip — problema ne pačiose vietovių koordinatėse, o tame, kad battle ikoną geriau rišti **prie to paties geografinio taško** ir tik **vizualiai pastumti į dešinę per CSS**, o ne bandyti ranka keisti `x/y`.
-
-Todėl pataisiau logiką taip:
-
-* markeris dedamas **tiksliai ant vietovės taško**
-* battle ikona rodoma **to taško dešinėje**
-* popup atsidaro paspaudus ant battle ikonos
-* nebereikia atskiro „x+15“ tipo poslinkio koordinatėse
-
-Žemiau pilnas pataisytas `index.html`.
-
-```html
 <!doctype html>
 <html lang="lt">
 <head>
