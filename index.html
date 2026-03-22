@@ -9,72 +9,122 @@
 
   <style>
     :root { --gap: 16px; }
-    body { margin:0; font-family: Arial, sans-serif; background:#f6f7f9; }
 
-    .map-area{
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f6f7f9;
+    }
+
+    .map-area {
       position: fixed;
       left: var(--gap);
       top: var(--gap);
       right: 260px;
       bottom: var(--gap);
-      background:#fff;
-      border:1px solid #ddd;
-      border-radius:12px;
-      overflow:hidden;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      overflow: hidden;
     }
-    #map { width:100%; height:100%; }
 
-    .panel{
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .panel {
       position: fixed;
       top: var(--gap);
       right: var(--gap);
       width: 230px;
-      background:#fff;
-      border:1px solid #ddd;
-      border-radius:12px;
-      padding:14px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 14px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-    }
-    .panel h3 { margin:0 0 10px 0; font-size:16px; }
-    select{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #ccc; background:#fff; }
-    .badge{ display:inline-block; margin-top:10px; padding:6px 10px; border-radius:999px; background:#eef2ff; border:1px solid #d9ddff; font-size:12px; }
-    .note{ margin-top:10px; font-size:12px; color:#444; line-height:1.35; }
-
-    button{
-      width:100%;
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid #cfd6ff;
-      background:#f2f5ff;
-      cursor:pointer;
-      font-weight:600;
+      z-index: 1000;
     }
 
-    textarea{
-      width:100%;
-      margin-top:10px;
-      min-height:120px;
-      border-radius:10px;
-      border:1px solid #ddd;
-      padding:10px;
-      font-size:12px;
+    .panel h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background: #fff;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eef2ff;
+      border: 1px solid #d9ddff;
+      font-size: 12px;
+    }
+
+    .note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #444;
+      line-height: 1.35;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #cfd6ff;
+      background: #f2f5ff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    textarea {
+      width: 100%;
+      margin-top: 10px;
+      min-height: 120px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       resize: vertical;
+      box-sizing: border-box;
     }
 
     @media (max-width: 820px) {
-      .map-area { right: var(--gap); bottom: 240px; }
-      .panel { width:auto; left: var(--gap); right: var(--gap); top:auto; bottom: var(--gap); }
+      .map-area {
+        right: var(--gap);
+        bottom: 240px;
+      }
+
+      .panel {
+        width: auto;
+        left: var(--gap);
+        right: var(--gap);
+        top: auto;
+        bottom: var(--gap);
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="map-area"><div id="map"></div></div>
+  <div class="map-area">
+    <div id="map"></div>
+  </div>
 
   <div class="panel">
     <h3>Metai</h3>
+
     <select id="yearSelect">
       <option value="2022" selected>2022</option>
       <option value="2023">2023</option>
@@ -93,7 +143,11 @@
       Įjunk Debug, kad “užsifiksuotum” tikslias koordinates ant JPG.
     </div>
 
-    <textarea id="codeOut" readonly placeholder="Kai Debug ON ir paspausi kampus – čia atsiras sugeneruotos koordinatės."></textarea>
+    <textarea
+      id="codeOut"
+      readonly
+      placeholder="Kai Debug ON ir paspausi kampus – čia atsiras sugeneruotos koordinatės."
+    ></textarea>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -105,34 +159,32 @@
     const hint = document.getElementById("hint");
     const codeOut = document.getElementById("codeOut");
 
-    const map = L.map('map', {
+    const map = L.map("map", {
       crs: L.CRS.Simple,
       minZoom: -2,
       maxZoom: 4
     });
 
     let overlay = null;
-    let clickRegions = L.layerGroup().addTo(map);
-    let debugPointsLayer = L.layerGroup().addTo(map);
+    const clickRegions = L.layerGroup().addTo(map);
+    const debugPointsLayer = L.layerGroup().addTo(map);
 
-    // === TAVO GALUTINĖS KOORDINATĖS (po debug) ===
-let VILNIUS_TRI = [
-  [58, 222],
-  [61, 111],
-  [263, 114]
-];
+    // Galutinės koordinatės debug režimui
+    let VILNIUS_TRI = [
+      [58, 222],
+      [61, 111],
+      [263, 114]
+    ];
 
-let KAUNAS_RECT = {
-  x1: 750, y1: 91,
-  x2: 902, y2: 174
-};
-
+    let KAUNAS_RECT = {
+      x1: 750, y1: 91,
+      x2: 902, y2: 174
+    };
 
     let DEBUG = false;
+    let vilniusClicks = [];
+    let kaunasClicks = [];
 
-    // Kontūrų stiliai:
-    // - debug ON: matomas raudonas kontūras
-    // - debug OFF: visiškai nematomas (bet paspaudžiamas)
     function getRegionStyle() {
       if (DEBUG) {
         return {
@@ -143,6 +195,7 @@ let KAUNAS_RECT = {
           fillOpacity: 0.12
         };
       }
+
       return {
         color: "#000000",
         weight: 0,
@@ -160,18 +213,16 @@ let KAUNAS_RECT = {
     }
 
     function addRegionPolygon(pointsXY, title, population) {
-      const latlngs = pointsXY.map(([x,y]) => [y, x]);
+      const latlngs = pointsXY.map(([x, y]) => [y, x]);
       const poly = L.polygon(latlngs, getRegionStyle());
-      poly.on('click', (e) => showPopup(e, title, population));
+      poly.on("click", (e) => showPopup(e, title, population));
       poly.addTo(clickRegions);
-      return poly;
     }
 
     function addRegionRect(x1, y1, x2, y2, title, population) {
       const rect = L.rectangle([[y1, x1], [y2, x2]], getRegionStyle());
-      rect.on('click', (e) => showPopup(e, title, population));
+      rect.on("click", (e) => showPopup(e, title, population));
       rect.addTo(clickRegions);
-      return rect;
     }
 
     function redrawRegions(year) {
@@ -179,22 +230,26 @@ let KAUNAS_RECT = {
 
       if (year === "2022") {
         addRegionPolygon(VILNIUS_TRI, "Vilnius", 592389);
-        addRegionRect(KAUNAS_RECT.x1, KAUNAS_RECT.y1, KAUNAS_RECT.x2, KAUNAS_RECT.y2, "Kaunas", 298753);
+        addRegionRect(
+          KAUNAS_RECT.x1,
+          KAUNAS_RECT.y1,
+          KAUNAS_RECT.x2,
+          KAUNAS_RECT.y2,
+          "Kaunas",
+          298753
+        );
       }
     }
 
     function formatCodeSnippet() {
       const tri = JSON.stringify(VILNIUS_TRI, null, 2);
       const rect = JSON.stringify(KAUNAS_RECT, null, 2);
+
       return `// Nukopijuok ir įklijuok į index.html (VILNIUS_TRI ir KAUNAS_RECT):
 let VILNIUS_TRI = ${tri};
 
 let KAUNAS_RECT = ${rect};`;
     }
-
-    // === DEBUG: surinkimas kampų ===
-    let vilniusClicks = [];
-    let kaunasClicks = [];
 
     function setHintText() {
       if (!DEBUG) {
@@ -205,6 +260,7 @@ let KAUNAS_RECT = ${rect};`;
         `;
         return;
       }
+
       hint.innerHTML = `
         <b>Debug ON</b><br>
         1) Paspausk <b>3 kartus</b> ant Vilnius trikampio kampų.<br>
@@ -220,21 +276,18 @@ let KAUNAS_RECT = ${rect};`;
       codeOut.value = "";
     }
 
-    map.on('click', (e) => {
+    map.on("click", (e) => {
       if (!DEBUG) return;
 
       const x = Math.round(e.latlng.lng);
       const y = Math.round(e.latlng.lat);
 
-      // mažas taškas, kad matytum kur paspaudei (tik debug režime)
       L.circleMarker([y, x], { radius: 4 }).addTo(debugPointsLayer);
 
-      // Surenkam 3 Vilniui, po to 2 Kaunui
       if (vilniusClicks.length < 3) {
         vilniusClicks.push([x, y]);
 
         if (vilniusClicks.length === 3) {
-          // atnaujinam trikampį
           VILNIUS_TRI = vilniusClicks.slice();
           redrawRegions(yearSelect.value);
           codeOut.value = formatCodeSnippet();
@@ -256,7 +309,6 @@ let KAUNAS_RECT = ${rect};`;
           redrawRegions(yearSelect.value);
           codeOut.value = formatCodeSnippet();
         }
-        return;
       }
     });
 
@@ -268,28 +320,51 @@ let KAUNAS_RECT = ${rect};`;
       redrawRegions(yearSelect.value);
     });
 
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Nepavyko užkrauti: ${src}`));
+
+        img.src = src;
+      });
+    }
+
     async function loadYear(year) {
       status.textContent = `Rodomas: ${year}`;
 
-      const imgUrl = `assets/${year}.jpg`;
-      const img = new Image();
-      img.src = imgUrl;
-      await img.decode();
+      // cache-buster, kad GitHub Pages / naršyklė nelaikytų senos JPG versijos
+      const imgUrl = `assets/${year}.jpg?v=${Date.now()}`;
+      console.log("Loading image:", imgUrl);
 
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-      const bounds = [[0,0],[h,w]];
+      try {
+        const img = await loadImage(imgUrl);
 
-      if (overlay) map.removeLayer(overlay);
-      overlay = L.imageOverlay(imgUrl, bounds).addTo(map);
-      map.fitBounds(bounds);
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const bounds = [[0, 0], [h, w]];
 
-      // perjungus metus — nuvalom debug paspaudimus
-      clearDebug();
-      redrawRegions(year);
+        if (overlay) {
+          map.removeLayer(overlay);
+        }
+
+        overlay = L.imageOverlay(imgUrl, bounds).addTo(map);
+        map.fitBounds(bounds);
+
+        clearDebug();
+        redrawRegions(year);
+
+        console.log(`Loaded OK: ${year}`, { width: w, height: h });
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
     }
 
-    yearSelect.addEventListener("change", () => loadYear(yearSelect.value));
+    yearSelect.addEventListener("change", () => {
+      loadYear(yearSelect.value);
+    });
 
     setHintText();
     loadYear("2022");
