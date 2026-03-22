@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="lt">
 <head>
@@ -180,9 +181,6 @@
       font-size: 11px;
     }
 
-    /* Svarbiausia dalis:
-       markeris inkaruojamas ties vietovės tašku,
-       o battle ikona tik vizualiai nupiešiama dešinėje. */
     .battle-wrapper {
       position: relative;
       width: 46px;
@@ -269,9 +267,9 @@
     </div>
 
     <div class="note">
-      Gali laisvai <b>zoominti</b> ir <b>stumdyti</b> žemėlapį.
+      Pirmam etapui paliktas tik vienas objektas – <b>Buča</b>.
       <br><br>
-      Paspaudus ant <b>battle</b> ikonos atsidarys detalus įvykio aprašymas.
+      Paspaudus ant battle ikonos atsidarys detalus aprašymas.
       <br><br>
       Debug režimas paliktas koordinačių tikslinimui.
     </div>
@@ -330,7 +328,8 @@
     }
 
     function createBattleDivIcon(size = "normal") {
-      const sizeClass = size === "large" ? "large" : size === "small" ? "small" : "normal";
+      const sizeClass =
+        size === "large" ? "large" : size === "small" ? "small" : "normal";
 
       return L.divIcon({
         className: "",
@@ -347,25 +346,12 @@
 
     function popupHtml(eventItem) {
       const places = eventItem.locations.map(item => item.place).join(", ");
-      const categoryMap = {
-        battle: "Mūšis",
-        siege: "Apgultis",
-        massacre: "Žudynės",
-        strike: "Smūgis",
-        offensive: "Puolimas / operacija",
-        liberation: "Išlaisvinimas",
-        frontline: "Fronto kovos",
-        naval: "Jūrinis / pakrantės įvykis",
-        sabotage: "Sabotažas / sprogimas"
-      };
-
-      const categoryLabel = categoryMap[eventItem.type] || "Istorinis įvykis";
 
       return `
         <div class="popup-title">${eventItem.title}</div>
         <div class="popup-meta">
           <b>Metai:</b> ${eventItem.year}<br>
-          <b>Tipas:</b> ${categoryLabel}<br>
+          <b>Tipas:</b> Žudynės / karo nusikaltimų vieta<br>
           <b>Vieta:</b> ${places}
         </div>
         <div class="popup-text">${eventItem.description}</div>
@@ -373,8 +359,6 @@
     }
 
     function addEventMarker(eventItem, loc) {
-      // Čia markeris dedamas tiksliai ant žalio taško koordinatės.
-      // Ikona piešiama dešinėje per CSS, nekeičiant geografinės vietos.
       const marker = L.marker([loc.y, loc.x], {
         icon: createBattleDivIcon(eventItem.size || "normal"),
         title: eventItem.title
@@ -441,7 +425,7 @@
         color: "#ff0000",
         weight: 2,
         fillColor: "#ff0000",
-        fillOpacity: 0.8
+        fillOpacity: 0.85
       }).addTo(debugPointsLayer);
 
       codeOut.value += `x: ${x}, y: ${y}\n`;
@@ -465,467 +449,15 @@
 
     const HISTORICAL_EVENTS = [
       {
-        id: "hostomel-airport-2022",
-        year: "2022",
-        title: "Hostomelio oro uosto mūšis",
-        type: "battle",
-        size: "large",
-        locations: [
-          { place: "Hostomelis", x: 621, y: 294 }
-        ],
-        description: "Rusijos desantininkai bandė užimti strateginį oro uostą netoli Kyjivo, kad galėtų greitai permeti pajėgas. Ukraina atmušė puolimą ir sužlugdė planą užimti sostinę žaibiškai."
-      },
-      {
-        id: "kyiv-battle-2022",
-        year: "2022",
-        title: "Kyjivo mūšis (2022)",
-        type: "offensive",
-        size: "large",
-        locations: [
-          { place: "Hostomelis", x: 621, y: 294 },
-          { place: "Buča", x: 665, y: 317 },
-          { place: "Brovarai", x: 762, y: 298 },
-          { place: "Kyjivo sritis", x: 701, y: 328 }
-        ],
-        description: "Rusijos pajėgos bandė apsupti ir užimti sostinę. Kovo pabaigoje jos buvo priverstos atsitraukti iš šiaurinės Ukrainos."
-      },
-      {
-        id: "chernihiv-battle-2022",
-        year: "2022",
-        title: "Černihivo mūšis (2022)",
-        type: "battle",
-        size: "normal",
-        locations: [
-          { place: "Černihivas", x: 813, y: 225 }
-        ],
-        description: "Miestas buvo apsuptas ir intensyviai apšaudomas, bet neužimtas. Rusijos pajėgos atsitraukė balandį."
-      },
-      {
-        id: "sumy-battle-2022",
-        year: "2022",
-        title: "Sumų mūšis (2022)",
-        type: "battle",
-        size: "normal",
-        locations: [
-          { place: "Sumai", x: 1078, y: 265 }
-        ],
-        description: "Rusijos daliniai bandė įtvirtinti kontrolę pasienio srityje, bet susidūrė su pasipriešinimu ir atsitraukė."
-      },
-      {
-        id: "kharkiv-battle-2022",
-        year: "2022",
-        title: "Charkivo mūšis (2022)",
-        type: "battle",
-        size: "large",
-        locations: [
-          { place: "Charkovas", x: 1190, y: 321 }
-        ],
-        description: "Antrasis pagal dydį miestas buvo smarkiai bombarduojamas, tačiau Ukraina išlaikė kontrolę."
-      },
-      {
-        id: "mariupol-siege-2022",
-        year: "2022",
-        title: "Mariupolio apgultis",
-        type: "siege",
-        size: "large",
-        locations: [
-          { place: "Mariupolis", x: 1288, y: 559 }
-        ],
-        description: "Miestas buvo apsuptas ir beveik visiškai sunaikintas po kelis mėnesius trukusių kovų."
-      },
-      {
-        id: "azovstal-siege-2022",
-        year: "2022",
-        title: "Azovstalio apgultis",
-        type: "siege",
-        size: "normal",
-        locations: [
-          { place: "Mariupolis / Azovstalis", x: 1304, y: 560 }
-        ],
-        description: "Paskutiniai Mariupolio gynėjai laikėsi plieno gamykloje iki 2022 m. gegužės."
-      },
-      {
         id: "bucha-massacre-2022",
         year: "2022",
         title: "Bučos žudynės",
         type: "massacre",
         size: "large",
         locations: [
-          { place: "Buča", x: 665, y: 317 }
+          { place: "Buča", x: 683, y: 164 }
         ],
-        description: "Po Rusijos atsitraukimo rasti nužudytų civilių kūnai, sukėlę tarptautinį pasipiktinimą."
-      },
-      {
-        id: "snake-island-battle-2022",
-        year: "2022",
-        title: "Gyvačių salos mūšis",
-        type: "naval",
-        size: "normal",
-        locations: [
-          { place: "Gyvačių sala", x: 712, y: 699 }
-        ],
-        description: "Strateginė sala Juodojoje jūroje kelis kartus keitė kontrolę; birželį Rusija pasitraukė."
-      },
-      {
-        id: "severodonetsk-battle-2022",
-        year: "2022",
-        title: "Severodonecko mūšis",
-        type: "battle",
-        size: "normal",
-        locations: [
-          { place: "Severodoneckas", x: 1370, y: 437 }
-        ],
-        description: "Intensyvios gatvių kovos baigėsi miesto užėmimu Rusijos."
-      },
-      {
-        id: "lysychansk-battle-2022",
-        year: "2022",
-        title: "Lysyčansko mūšis",
-        type: "battle",
-        size: "normal",
-        locations: [
-          { place: "Lysyčanskas", x: 1302, y: 423 }
-        ],
-        description: "Užėmus miestą, Rusija perėmė beveik visą Luhansko sritį."
-      },
-      {
-        id: "kremenchuk-mall-strike-2022",
-        year: "2022",
-        title: "Kremenčuko prekybos centro bombardavimas",
-        type: "strike",
-        size: "normal",
-        locations: [
-          { place: "Kremenčugas", x: 965, y: 408 }
-        ],
-        description: "Raketos smūgis prekybos centrui nusinešė daug civilių gyvybių."
-      },
-      {
-        id: "vinnytsia-strike-2022",
-        year: "2022",
-        title: "Vinicos raketų smūgis (2022)",
-        type: "strike",
-        size: "normal",
-        locations: [
-          { place: "Vinica", x: 584, y: 421 }
-        ],
-        description: "Ataka miesto centre sukėlė didelius civilių nuostolius."
-      },
-      {
-        id: "kharkiv-counteroffensive-2022",
-        year: "2022",
-        title: "Charkivo kontrpuolimas (2022)",
-        type: "offensive",
-        size: "large",
-        locations: [
-          { place: "Charkivas", x: 1190, y: 321 },
-          { place: "Iziumas", x: 1267, y: 393 },
-          { place: "Kupjanskas", x: 1249, y: 360 }
-        ],
-        description: "Ukraina greitai pralaužė frontą ir atsiėmė dideles teritorijas."
-      },
-      {
-        id: "izium-liberation-2022",
-        year: "2022",
-        title: "Iziumo išlaisvinimas",
-        type: "liberation",
-        size: "normal",
-        locations: [
-          { place: "Iziumas", x: 1267, y: 393 }
-        ],
-        description: "Strateginis logistikos centras buvo susigrąžintas per kontrpuolimą."
-      },
-      {
-        id: "lyman-liberation-2022",
-        year: "2022",
-        title: "Lymano išlaisvinimas",
-        type: "liberation",
-        size: "normal",
-        locations: [
-          { place: "Lymanas", x: 1305, y: 448 }
-        ],
-        description: "Ukraina atkovojo svarbų transporto mazgą Donecko srityje."
-      },
-      {
-        id: "crimea-bridge-explosion-2022",
-        year: "2022",
-        title: "Krymo tilto sprogimas",
-        type: "sabotage",
-        size: "large",
-        locations: [
-          { place: "Krymo tiltas", x: 1465, y: 776 }
-        ],
-        description: "Sprogimas smarkiai apgadino tiltą, jungiantį Krymą su Rusija."
-      },
-      {
-        id: "kherson-liberation-2022",
-        year: "2022",
-        title: "Chersono išlaisvinimas",
-        type: "liberation",
-        size: "large",
-        locations: [
-          { place: "Chersonas", x: 918, y: 593 }
-        ],
-        description: "Rusija atsitraukė iš dešiniojo Dnipro kranto; Ukraina susigrąžino srities centrą."
-      },
-
-      {
-        id: "soledar-battle-2023",
-        year: "2023",
-        title: "Soledaro mūšis",
-        type: "battle",
-        size: "normal",
-        locations: [
-          { place: "Soledaras", x: 1326, y: 494 }
-        ],
-        description: "Miestą užėmė Rusijos pajėgos po sunkių kovų."
-      },
-      {
-        id: "bakhmut-battle-2023",
-        year: "2023",
-        title: "Bachmuto mūšis",
-        type: "battle",
-        size: "large",
-        locations: [
-          { place: "Bachmutas", x: 1320, y: 516 }
-        ],
-        description: "Ilgiausias ir kruviniausias mūšis Donbase, miestas užimtas 2023 m. gegužę."
-      },
-      {
-        id: "vuhledar-battle-2023",
-        year: "2023",
-        title: "Vuhledaro mūšis (2023)",
-        type: "battle",
-        size: "normal",
-        locations: [
-          { place: "Vuhledaras", x: 1238, y: 645 }
-        ],
-        description: "Rusijos šarvuotosios atakos patyrė didelių nuostolių."
-      },
-      {
-        id: "kakhovka-dam-2023",
-        year: "2023",
-        title: "Kachovkos užtvankos susprogdinimas",
-        type: "strike",
-        size: "large",
-        locations: [
-          { place: "Naujoji Kachovka", x: 1008, y: 598 }
-        ],
-        description: "Sugriovus užtvanką, kilo didelis potvynis Dnipro žemupyje."
-      },
-      {
-        id: "zaporizhzhia-counteroffensive-2023",
-        year: "2023",
-        title: "Zaporižės krypties kontrpuolimas",
-        type: "offensive",
-        size: "large",
-        locations: [
-          { place: "Robotynė", x: 1120, y: 523 },
-          { place: "Zaporižė", x: 1137, y: 491 },
-          { place: "Tokmako kryptis", x: 1102, y: 583 }
-        ],
-        description: "Ukraina bandė pralaužti giliai įtvirtintas Rusijos gynybos linijas."
-      },
-      {
-        id: "robotyne-liberation-2023",
-        year: "2023",
-        title: "Robotynės išlaisvinimas",
-        type: "liberation",
-        size: "normal",
-        locations: [
-          { place: "Robotynė", x: 1120, y: 523 }
-        ],
-        description: "Nedidelė gyvenvietė tapo vienu iš kontrpuolimo pasiekimų."
-      },
-      {
-        id: "crimea-strikes-sevastopol-2023",
-        year: "2023",
-        title: "Smūgiai Krymui (Sevastopolis)",
-        type: "strike",
-        size: "large",
-        locations: [
-          { place: "Sevastopolis", x: 962, y: 757 }
-        ],
-        description: "Ukrainos atakos taikėsi į Juodosios jūros laivyną ir oro bazes."
-      },
-      {
-        id: "atacms-berdiansk-luhansk-2023",
-        year: "2023",
-        title: "ATACMS smūgiai Berdianskui ir Luhanskui",
-        type: "strike",
-        size: "large",
-        locations: [
-          { place: "Berdianskas", x: 1237, y: 593 },
-          { place: "Luhanskas", x: 1423, y: 437 }
-        ],
-        description: "Ilgo nuotolio raketos sunaikino orlaivius aerodromuose."
-      },
-      {
-        id: "odesa-port-shelling-2023",
-        year: "2023",
-        title: "Odesos uostų apšaudymas",
-        type: "strike",
-        size: "normal",
-        locations: [
-          { place: "Odesa", x: 748, y: 611 }
-        ],
-        description: "Rusija intensyviai atakavo grūdų eksporto infrastruktūrą."
-      },
-      {
-        id: "avdiivka-offensive-start-2023",
-        year: "2023",
-        title: "Avdijivkos puolimo pradžia",
-        type: "offensive",
-        size: "large",
-        locations: [
-          { place: "Avdijivka", x: 1270, y: 507 }
-        ],
-        description: "Rusija pradėjo plataus masto puolimą aplink miestą."
-      },
-      {
-        id: "dnipro-left-bank-operations-2023",
-        year: "2023",
-        title: "Operacijos kairiajame Dnipro krante",
-        type: "offensive",
-        size: "normal",
-        locations: [
-          { place: "Chersono sritis", x: 918, y: 593 },
-          { place: "Kairysis Dnipro krantas", x: 969, y: 594 },
-          { place: "Placdarmų zona", x: 999, y: 598 }
-        ],
-        description: "Ukraina įsitvirtino keliuose placdarmuose Chersono srityje."
-      },
-
-      {
-        id: "avdiivka-battle-2024",
-        year: "2024",
-        title: "Avdijivkos mūšis",
-        type: "battle",
-        size: "large",
-        locations: [
-          { place: "Avdijivka", x: 1270, y: 507 }
-        ],
-        description: "Po mėnesių kovų Rusija užėmė miestą."
-      },
-      {
-        id: "advance-oceretyne-2024",
-        year: "2024",
-        title: "Puolimas link Očeretyne",
-        type: "offensive",
-        size: "normal",
-        locations: [
-          { place: "Očeretynė", x: 1095, y: 578 },
-          { place: "Avdijivkos vakarai", x: 1228, y: 520 }
-        ],
-        description: "Rusija plėtė kontrolę į vakarus nuo Avdijivkos."
-      },
-      {
-        id: "kharkiv-region-offensive-2024",
-        year: "2024",
-        title: "Puolimas Charkivo srityje (2024 gegužė)",
-        type: "offensive",
-        size: "large",
-        locations: [
-          { place: "Vovčansko kryptis", x: 1215, y: 330 },
-          { place: "Charkivo sritis", x: 1190, y: 321 }
-        ],
-        description: "Rusija pradėjo naują operaciją Vovčansko kryptimi."
-      },
-      {
-        id: "chasiv-yar-battles-2024",
-        year: "2024",
-        title: "Mūšiai prie Časiv Jaro",
-        type: "battle",
-        size: "large",
-        locations: [
-          { place: "Časiv Jaras", x: 1118, y: 516 }
-        ],
-        description: "Strategiškai svarbi aukštuma tapo intensyvių kovų zona."
-      },
-      {
-        id: "crimea-air-bases-2024",
-        year: "2024",
-        title: "Smūgiai Krymo oro bazėms",
-        type: "strike",
-        size: "large",
-        locations: [
-          { place: "Krymas", x: 1048, y: 699 },
-          { place: "Sevastopolis", x: 962, y: 757 }
-        ],
-        description: "Atakos prieš Rusijos aviacijos infrastruktūrą."
-      },
-      {
-        id: "zaporizhzhia-front-2024",
-        year: "2024",
-        title: "Kovos Zaporižės fronte (2024)",
-        type: "frontline",
-        size: "normal",
-        locations: [
-          { place: "Zaporižė", x: 1137, y: 491 },
-          { place: "Robotynė", x: 1120, y: 523 },
-          { place: "Pietinis ruožas", x: 1102, y: 583 }
-        ],
-        description: "Abi pusės vykdė lokalius puolimus ir kontratakas."
-      },
-      {
-        id: "kyiv-air-defense-2024",
-        year: "2024",
-        title: "Oro gynybos mūšiai virš Kyjivo (2024)",
-        type: "strike",
-        size: "large",
-        locations: [
-          { place: "Kyjivo sritis", x: 701, y: 328 }
-        ],
-        description: "Intensyvios raketų ir dronų atakos prieš sostinę."
-      },
-      {
-        id: "black-sea-fleet-crimea-2024",
-        year: "2024",
-        title: "Atakos prieš Juodosios jūros laivyną Kryme",
-        type: "naval",
-        size: "large",
-        locations: [
-          { place: "Sevastopolis", x: 962, y: 757 }
-        ],
-        description: "Smūgiai laivams ir infrastruktūrai Sevastopolyje."
-      },
-
-      {
-        id: "donetsk-positional-fights-2025",
-        year: "2025",
-        title: "Pozicinės kovos Donecko srityje",
-        type: "frontline",
-        size: "large",
-        locations: [
-          { place: "Avdijivkos ruožas", x: 1270, y: 507 },
-          { place: "Časiv Jaro ruožas", x: 1118, y: 516 },
-          { place: "Donecko sritis", x: 1285, y: 540 }
-        ],
-        description: "Frontas juda lėtai, vyksta nuolatinės artilerijos dvikovos."
-      },
-      {
-        id: "zaporizhzhia-line-2025",
-        year: "2025",
-        title: "Kovos Zaporižės linijoje (2025)",
-        type: "frontline",
-        size: "normal",
-        locations: [
-          { place: "Zaporižė", x: 1137, y: 491 },
-          { place: "Robotynė", x: 1120, y: 523 },
-          { place: "Pietinė linija", x: 1102, y: 583 }
-        ],
-        description: "Lokalūs puolimai ir gynybinės operacijos."
-      },
-      {
-        id: "luhansk-svatove-kreminna-2025",
-        year: "2025",
-        title: "Kovos Luhansko srityje (Svatovė–Kreminna)",
-        type: "frontline",
-        size: "normal",
-        locations: [
-          { place: "Svatovė–Kreminna kryptis", x: 1320, y: 402 },
-          { place: "Luhansko sritis", x: 1423, y: 437 }
-        ],
-        description: "Miškingose vietovėse vyksta nuolatiniai susirėmimai."
+        description: "Po Rusijos atsitraukimo Bučoje rasti nužudytų civilių kūnai. Įvykiai tapo vienu ryškiausių karo nusikaltimų simbolių ir sukėlė tarptautinį pasipiktinimą."
       }
     ];
 
@@ -933,3 +465,4 @@
   </script>
 </body>
 </html>
+```
