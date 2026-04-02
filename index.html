@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="lt">
 <head>
@@ -322,8 +321,7 @@
       <br><br>
       Jei objektui priskirta vietinė JPG nuotrauka, ji bus rodoma lange.
       <br><br>
-      Debug režime rodomos procentinės koordinatės:
-      <b>xPct</b> ir <b>yPct</b>.
+      Debug režimas rodo procentines koordinates: <b>xPct</b> ir <b>yPct</b>.
     </div>
 
     <textarea
@@ -406,6 +404,10 @@
         .replaceAll("'", "&#039;");
     }
 
+    function roundPct(value) {
+      return Number(value.toFixed(6));
+    }
+
     function getEventYearRange(eventItem) {
       const yearText = String(eventItem.year || "").trim();
 
@@ -481,68 +483,11 @@
       `;
     }
 
-    function roundPct(value) {
-      return Number(value.toFixed(6));
-    }
-
-    function normalizeLocation(loc) {
-      if (typeof loc.xPct === "number" && typeof loc.yPct === "number") {
-        return {
-          ...loc,
-          xPct: roundPct(loc.xPct),
-          yPct: roundPct(loc.yPct)
-        };
-      }
-
-      if (
-        typeof loc.x === "number" &&
-        typeof loc.y === "number" &&
-        currentImageWidth > 0 &&
-        currentImageHeight > 0
-      ) {
-        return {
-          ...loc,
-          xPct: roundPct(loc.x / currentImageWidth),
-          yPct: roundPct(loc.y / currentImageHeight)
-        };
-      }
-
-      return {
-        ...loc,
-        xPct: 0,
-        yPct: 0
-      };
-    }
-
-    function locationToMapPoint(loc) {
-      const normalized = normalizeLocation(loc);
-
-      return {
-        x: normalized.xPct * currentImageWidth,
-        y: normalized.yPct * currentImageHeight,
-        xPct: normalized.xPct,
-        yPct: normalized.yPct
-      };
-    }
-
-    function convertEventsToPercentCoordinates() {
-      HISTORICAL_EVENTS.forEach(eventItem => {
-        eventItem.locations = eventItem.locations.map(loc => {
-          const normalized = normalizeLocation(loc);
-
-          return {
-            place: loc.place,
-            xPct: normalized.xPct,
-            yPct: normalized.yPct
-          };
-        });
-      });
-    }
-
     function addEventMarker(eventItem, loc) {
-      const point = locationToMapPoint(loc);
+      const markerX = loc.xPct * currentImageWidth;
+      const markerY = loc.yPct * currentImageHeight;
 
-      const marker = L.marker([point.y, point.x], {
+      const marker = L.marker([markerY, markerX], {
         icon: createBattleDivIcon(eventItem.size || "normal"),
         title: eventItem.title
       });
@@ -590,7 +535,6 @@
           [h * 1.2, w * 1.2]
         ]);
 
-        convertEventsToPercentCoordinates();
         fitToImage();
         clearDebug();
         drawEvents(year);
@@ -603,11 +547,8 @@
     map.on("click", (e) => {
       if (!DEBUG || currentImageWidth <= 0 || currentImageHeight <= 0) return;
 
-      const rawX = e.latlng.lng;
-      const rawY = e.latlng.lat;
-
-      const xPct = roundPct(rawX / currentImageWidth);
-      const yPct = roundPct(rawY / currentImageHeight);
+      const xPct = roundPct(e.latlng.lng / currentImageWidth);
+      const yPct = roundPct(e.latlng.lat / currentImageHeight);
 
       const x = xPct * currentImageWidth;
       const y = yPct * currentImageHeight;
@@ -648,7 +589,7 @@
         size: "large",
         image: "assets/photos/Hostomel.jpg",
         locations: [
-          { place: "Hostomelis", x: 6318, y: 5151 }
+          { place: "Hostomelis", xPct: 0.488178, yPct: 0.488061 }
         ],
         description: "Rusijos desantas bandė užimti oro uostą kaip placdarmą Kyjivo užėmimui. Ukraina sunaikino dalį desantininkų ir technikos bei neleido priimti papildomų pajėgų. Šis mūšis sužlugdė greito sostinės užėmimo planą."
       },
@@ -660,10 +601,10 @@
         size: "large",
         image: "assets/photos/Kyiv.jpg",
         locations: [
-          { place: "Hostomelis", x: 6318, y: 5151 },
-          { place: "Buča", x: 6287, y: 5109 },
-          { place: "Brovarai", x: 6661, y: 5088 },
-          { place: "Kyjivo sritis", x: 6483, y: 5045 }
+          { place: "Hostomelis", xPct: 0.488178, yPct: 0.488061 },
+          { place: "Buča", xPct: 0.485783, yPct: 0.484082 },
+          { place: "Brovarai", xPct: 0.514681, yPct: 0.482092 },
+          { place: "Kyjivo sritis", xPct: 0.500927, yPct: 0.478018 }
         ],
         description: "Rusijos pajėgos bandė apsupti Kyjivą, tačiau susidūrė su stipriu pasipriešinimu ir logistinėmis problemomis. Per mūšį buvo sunaikinta daug technikos ir patirta didelių nuostolių. Balandžio pradžioje Rusija visiškai atsitraukė iš šiaurės Ukrainos."
       },
@@ -675,7 +616,7 @@
         size: "normal",
         image: "assets/photos/Chernihiv.jpg",
         locations: [
-          { place: "Černihivas", x: 7013, y: 5762 }
+          { place: "Černihivas", xPct: 0.541879, yPct: 0.545954 }
         ],
         description: "Miestas buvo apsuptas ir nuolat bombarduojamas, sukeliant didelę civilių žalą. Nepaisant to, gynyba išsilaikė. Atsitraukdama Rusija paliko sunaikintą infrastruktūrą."
       },
@@ -687,7 +628,7 @@
         size: "normal",
         image: "assets/photos/Sumy.jpg",
         locations: [
-          { place: "Sumai", x: 9345, y: 5377 }
+          { place: "Sumai", xPct: 0.722068, yPct: 0.509475 }
         ],
         description: "Rusijos daliniai bandė užimti regioną, bet susidūrė su Ukrainos kariuomenės pasipriešinimu. Miestas nebuvo užimtas, parodant Ukrainos gebėjimą gintis net prie sienos."
       },
@@ -699,7 +640,7 @@
         size: "large",
         image: "assets/photos/Kharkiv.jpg",
         locations: [
-          { place: "Charkovas", x: 10332, y: 4758 }
+          { place: "Charkovas", xPct: 0.798331, yPct: 0.450824 }
         ],
         description: "Charkivas, antras pagal dydį miestas, buvo intensyviai apšaudomas, ypač artilerija ir raketomis. Nepaisant didelių sugriovimų, Ukraina išlaikė miestą. Tai tapo svarbia moraline pergale."
       },
@@ -711,7 +652,7 @@
         size: "large",
         image: "assets/photos/Mariupol.jpg",
         locations: [
-          { place: "Mariupolis", x: 11206, y: 2812 }
+          { place: "Mariupolis", xPct: 0.865863, yPct: 0.266439 }
         ],
         description: "Miestas buvo visiškai apsuptas ir sunaikintas ilgų kovų metu. Žuvo tūkstančiai civilių, o infrastruktūra beveik visiškai sugriauta. Tai buvo viena didžiausių humanitarinių katastrofų kare. Po įviukių šiame mieste JAV prezidentas Joe Biden pirmąkart pavadino V. Putiną karo nusikalteliu."
       },
@@ -723,7 +664,7 @@
         size: "normal",
         image: "assets/photos/Mariupol.jpg",
         locations: [
-          { place: "Mariupolis / Azovstalis", x: 11242, y: 2816 }
+          { place: "Mariupolis / Azovstalis", xPct: 0.868645, yPct: 0.266818 }
         ],
         description: "Paskutiniai Mariupolio gynėjai laikėsi Azovstalio plieno gamykloje. Ilgalaikė gynyba tapo pasipriešinimo simboliu. Galiausiai jie buvo priversti pasiduoti dėl išsekusių resursų."
       },
@@ -735,7 +676,7 @@
         size: "large",
         image: "assets/photos/Bucha.jpg",
         locations: [
-          { place: "Buča", x: 6287, y: 5109 }
+          { place: "Buča", xPct: 0.485783, yPct: 0.484082 }
         ],
         description: "Po Rusijos atsitraukimo rasti masinių civilių žudynių įrodymai. Tarptautinė bendruomenė tai pasmerkė kaip karo nusikaltimus. Įvykis turėjo didelę politinę reikšmę."
       },
@@ -747,7 +688,7 @@
         size: "normal",
         image: "assets/photos/Snake_Island.jpg",
         locations: [
-          { place: "Gyvačių sala", x: 6275, y: 1578 }
+          { place: "Gyvačių sala", xPct: 0.484856, yPct: 0.149517 }
         ],
         description: "Sala buvo svarbi Juodosios jūros kontrolei ir oro gynybai. Ukraina nuolat atakavo garnizoną raketomis ir dronais. Galiausiai Rusija buvo priversta pasitraukti."
       },
@@ -758,7 +699,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Severodoneckas", x: 11835, y: 4055 }
+          { place: "Severodoneckas", xPct: 0.914465, yPct: 0.384215 }
         ],
         description: "Vyko intensyvios miesto kovos, primenančios urbanistinį karą. Ukraina patyrė nuostolių ir atsitraukė. Tai atvėrė kelią Rusijai įsitvirtinti Luhansko srityje."
       },
@@ -769,7 +710,7 @@
         type: "battle",
         size: "normal",
         locations: [
-          { place: "Lysyčanskas", x: 11791, y: 4017 }
+          { place: "Lysyčanskas", xPct: 0.911065, yPct: 0.380614 }
         ],
         description: "Po miesto užėmimo Rusija perėmė beveik visą Luhansko sritį. Ukraina atsitraukė į gynybines linijas. Tai buvo laikina Rusijos strateginė sėkmė."
       },
@@ -780,7 +721,7 @@
         type: "strike",
         size: "normal",
         locations: [
-          { place: "Kremenčugas", x: 8440, y: 4143 }
+          { place: "Kremenčugas", xPct: 0.652140, yPct: 0.392553 }
         ],
         description: "Raketos smūgis prekybos centrui nusinešė daug civilių gyvybių. Įvykis aiškiai parodė karo poveikį ir grėsmę civiliams. Šį įvykį Didysis Septynetas paskelbė karo nusikaltimu, nes buvo tiesiogiai atakuojama civilinė infrastruktūra."
       },
@@ -791,7 +732,7 @@
         type: "strike",
         size: "normal",
         locations: [
-          { place: "Vinica", xPct: 0.36268, yPct: 0.546737 }
+          { place: "Vinica", xPct: 0.395611, yPct: 0.401838 }
         ],
         description: "Smūgis miesto centre nužudė civilius ir sunaikino infrastruktūrą. Tai buvo vienas ryškiausių atakų prieš civilius pavyzdžių."
       },
@@ -803,9 +744,9 @@
         size: "large",
         image: "assets/photos/Kharkiv.jpg",
         locations: [
-          { place: "Charkivas", x: 10332, y: 4758 },
-          { place: "Iziumas", x: 11009, y: 4228 },
-          { place: "Kupjanskas", x: 11235, y: 4570 }
+          { place: "Charkivas", xPct: 0.798331, yPct: 0.450824 },
+          { place: "Iziumas", xPct: 0.850641, yPct: 0.400606 },
+          { place: "Kupjanskas", xPct: 0.868104, yPct: 0.433011 }
         ],
         description: "Ukraina netikėtai pralaužė frontą ir per kelias savaites susigrąžino tūkstančius kvadratinių kilometrų. Rusijos pajėgos patyrė didelius nuostolius ir atsitraukė. Tai buvo vienas svarbiausių karo lūžio momentų."
       },
@@ -816,7 +757,7 @@
         type: "liberation",
         size: "normal",
         locations: [
-          { place: "Iziumas", x: 11009, y: 4228 }
+          { place: "Iziumas", xPct: 0.850641, yPct: 0.400606 }
         ],
         description: "Iziumas buvo svarbus logistikos centras Rusijos operacijoms Donbase. Strateginis logistikos centras buvo susigrąžintas per Charkivo kontrpuolimą."
       },
@@ -827,7 +768,7 @@
         type: "liberation",
         size: "normal",
         locations: [
-          { place: "Lymanas", x: 11368, y: 4080 }
+          { place: "Lymanas", xPct: 0.878380, yPct: 0.386583 }
         ],
         description: "Ukraina atkovojo svarbų transporto mazgą. Tai sustiprino jos pozicijas prieš Rusijos pajėgas Donecke."
       },
@@ -838,7 +779,7 @@
         type: "sabotage",
         size: "large",
         locations: [
-          { place: "Krymo tiltas", x: 10532, y: 1580 }
+          { place: "Krymo tiltas", xPct: 0.813785, yPct: 0.149706 }
         ],
         description: "Sprogimas smarkiai apgadino tiltą, jungiantį Krymą su Rusija, kuris buvo pagrindinė tiekimo arterija į Krymą. Tai turėjo didelį simbolinį ir karinį poveikį."
       },
@@ -849,11 +790,10 @@
         type: "liberation",
         size: "large",
         locations: [
-          { place: "Chersonas", x: 7881, y: 2493 }
+          { place: "Chersonas", xPct: 0.608948, yPct: 0.236214 }
         ],
         description: "Rusija atsitraukė per Dniprą, palikdama miestą. Ukraina susigrąžino vienintelį okupuotą srities centrą. Tai buvo svarbi politinė ir karinė pergalė."
       },
-
       {
         id: "soledar-battle-2023",
         year: "2022-08-03 – 2023-01-16",
@@ -862,7 +802,7 @@
         size: "normal",
         image: "assets/photos/Soledar.jpg",
         locations: [
-          { place: "Soledaras", x: 11261, y: 4040 }
+          { place: "Soledaras", xPct: 0.870113, yPct: 0.382793 }
         ],
         description: "Po ilgų ir labai intensyvių kovų Rusijos pajėgos (ypač „Wagner“) užėmė miestą. Abi pusės patyrė didelių nuostolių, ypač pėstininkų. Tai suteikė Rusijai taktinių pozicijų netoli Bachmuto."
       },
@@ -874,7 +814,7 @@
         size: "large",
         image: "assets/photos/Bakhmut.jpg",
         locations: [
-          { place: "Bachmutas", x: 1320, y: 516 }
+          { place: "Bachmutas", xPct: 0.101994, yPct: 0.048891 }
         ],
         description: "Vienas ilgiausių ir kruviniausių karo mūšių, kuriame žuvo dešimtys tūkstančių karių iš abiejų pusių. Miestas buvo praktiškai sunaikintas. Nors Rusija jį užėmė, strateginė reikšmė buvo ribota lyginant su patirtais nuostoliais."
       },
@@ -886,7 +826,7 @@
         size: "normal",
         image: "assets/photos/Vuhledar.jpg",
         locations: [
-          { place: "Vuhledaras", x: 1238, y: 645 }
+          { place: "Vuhledaras", xPct: 0.095658, yPct: 0.061114 }
         ],
         description: "Rusijos mechanizuotos kolonos patyrė didelius nuostolius dėl minų laukų ir artilerijos. Tai tapo vienu ryškiausių nesėkmingų puolimų pavyzdžių. Ukraina išlaikė gynybines pozicijas."
       },
@@ -898,7 +838,7 @@
         size: "large",
         image: "assets/photos/Nova_Kakhovka.jpg",
         locations: [
-          { place: "Naujoji Kachovka", x: 1008, y: 598 }
+          { place: "Naujoji Kachovka", xPct: 0.077886, yPct: 0.056661 }
         ],
         description: "Sugriovus užtvanką, kilo masinis potvynis, užliejęs dešimtis gyvenviečių. Žuvo civiliai, buvo sunaikinta infrastruktūra ir ekologinė sistema. Tai turėjo ilgalaikių pasekmių regionui ir apsunkino karines operacijas."
       },
@@ -909,9 +849,9 @@
         type: "offensive",
         size: "large",
         locations: [
-          { place: "Robotynė", x: 1120, y: 523 },
-          { place: "Zaporižė", x: 1137, y: 491 },
-          { place: "Tokmako kryptis", x: 1102, y: 583 }
+          { place: "Robotynė", xPct: 0.086540, yPct: 0.049555 },
+          { place: "Zaporižė", xPct: 0.087854, yPct: 0.046523 },
+          { place: "Tokmako kryptis", xPct: 0.085149, yPct: 0.055240 }
         ],
         description: "Ukraina pradėjo plataus masto operaciją siekdama pralaužti Rusijos gynybą pietuose. Dėl minų laukų ir įtvirtinimų pažanga buvo lėta. Nepaisant to, buvo pasiektos kelios taktinės pergalės."
       },
@@ -922,7 +862,7 @@
         type: "liberation",
         size: "normal",
         locations: [
-          { place: "Robotynė", x: 1120, y: 523 }
+          { place: "Robotynė", xPct: 0.086540, yPct: 0.049555 }
         ],
         description: "Ukrainos pajėgos užėmė strategiškai svarbią gyvenvietę Zaporižės kryptimi. Tai buvo vienas iš nedaugelio aiškių kontrpuolimo pasiekimų. Tačiau platesnio proveržio pasiekti nepavyko."
       },
@@ -933,7 +873,7 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Sevastopolis", x: 962, y: 757 }
+          { place: "Sevastopolis", xPct: 0.074332, yPct: 0.071726 }
         ],
         description: "Ukraina smogė Juodosios jūros laivyno objektams Kryme. Buvo apgadinti laivai ir infrastruktūra. Tai sumažino Rusijos jūrines galimybes regione."
       },
@@ -944,8 +884,8 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Berdianskas", x: 1237, y: 593 },
-          { place: "Luhanskas", x: 1423, y: 437 }
+          { place: "Berdianskas", xPct: 0.095580, yPct: 0.056187 },
+          { place: "Luhanskas", xPct: 0.109952, yPct: 0.041406 }
         ],
         description: "Ilgo nuotolio raketos sunaikino Rusijos sraigtasparnius ir techniką aerodromuose. Tai buvo reikšmingas smūgis logistikai ir aviacijai. Parodė naujų ginklų poveikį fronte."
       },
@@ -956,7 +896,7 @@
         type: "strike",
         size: "normal",
         locations: [
-          { place: "Odesa", x: 748, y: 611 }
+          { place: "Odesa", xPct: 0.057796, yPct: 0.057893 }
         ],
         description: "Rusija atakavo grūdų eksportui svarbią infrastruktūrą. Tai turėjo poveikį pasaulinėms maisto rinkoms. Taip pat sukėlė ekonominių nuostolių Ukrainai."
       },
@@ -968,7 +908,7 @@
         size: "large",
         image: "assets/photos/Avdiivka.jpg",
         locations: [
-          { place: "Avdijivka", x: 1270, y: 507 }
+          { place: "Avdijivka", xPct: 0.098130, yPct: 0.048039 }
         ],
         description: "Rusija pradėjo plataus masto puolimą, siekdama apsupti miestą. Mūšiai tapo vienais intensyviausių 2023–2024 m. laikotarpiu. Abi pusės patyrė didelius nuostolius."
       },
@@ -980,7 +920,7 @@
         size: "large",
         image: "assets/photos/Avdiivka.jpg",
         locations: [
-          { place: "Avdijivka", x: 1270, y: 507 }
+          { place: "Avdijivka", xPct: 0.098130, yPct: 0.048039 }
         ],
         description: "Po ilgų ir nuostolingų kovų Rusija užėmė miestą. Miestas buvo beveik visiškai sunaikintas. Tai suteikė Rusijai taktinį pranašumą Donecko srityje."
       },
@@ -991,8 +931,8 @@
         type: "offensive",
         size: "normal",
         locations: [
-          { place: "Očeretynė", x: 1095, y: 578 },
-          { place: "Avdijivkos vakarai", x: 1228, y: 520 }
+          { place: "Očeretynė", xPct: 0.084608, yPct: 0.054766 },
+          { place: "Avdijivkos vakarai", xPct: 0.094885, yPct: 0.049270 }
         ],
         description: "Rusija bandė plėsti frontą į vakarus nuo Avdijivkos. Kovos buvo intensyvios, su dideliais nuostoliais. Frontas pamažu judėjo Rusijos naudai."
       },
@@ -1004,8 +944,8 @@
         size: "large",
         image: "assets/photos/Kharkiv.jpg",
         locations: [
-          { place: "Vovčansko kryptis", x: 1215, y: 330 },
-          { place: "Charkivo sritis", x: 1190, y: 321 }
+          { place: "Vovčansko kryptis", xPct: 0.093880, yPct: 0.031268 },
+          { place: "Charkivo sritis", xPct: 0.091949, yPct: 0.030415 }
         ],
         description: "Rusija pradėjo naują operaciją Charkivo srityje. Tikslas buvo atitraukti Ukrainos pajėgas nuo kitų frontų. Kovos išliko aktyvios visą vasarą."
       },
@@ -1017,7 +957,7 @@
         size: "large",
         image: "assets/photos/Chasiv_Yar.jpg",
         locations: [
-          { place: "Časiv Jaras", x: 1118, y: 516 }
+          { place: "Časiv Jaras", xPct: 0.086385, yPct: 0.048891 }
         ],
         description: "Miestas tapo svarbia aukštuma Donbase. Intensyvios kovos tęsėsi visus metus. Abi pusės patyrė nuolatinius nuostolius."
       },
@@ -1028,8 +968,8 @@
         type: "strike",
         size: "large",
         locations: [
-          { place: "Džankojus", x: 1048, y: 699 },
-          { place: "Sevastopolis", x: 962, y: 757 }
+          { place: "Džankojus", xPct: 0.080977, yPct: 0.066231 },
+          { place: "Sevastopolis", xPct: 0.074332, yPct: 0.071726 }
         ],
         description: "Ataka Kryme sunaikino oro gynybos ir aviacijos objektus. Tai sumažino Rusijos galimybes regione. Krymas tapo vis labiau pažeidžiamas."
       },
@@ -1040,9 +980,9 @@
         type: "frontline",
         size: "normal",
         locations: [
-          { place: "Zaporižė", x: 1137, y: 491 },
-          { place: "Robotynė", x: 1120, y: 523 },
-          { place: "Pietinis ruožas", x: 1102, y: 583 }
+          { place: "Zaporižė", xPct: 0.087854, yPct: 0.046523 },
+          { place: "Robotynė", xPct: 0.086540, yPct: 0.049555 },
+          { place: "Pietinis ruožas", xPct: 0.085149, yPct: 0.055240 }
         ],
         description: "Frontas išliko stabilus, bet vyko nuolatiniai susirėmimai. Abi pusės vykdė lokalius puolimus. Dideli teritoriniai pokyčiai neįvyko."
       },
@@ -1054,7 +994,7 @@
         size: "large",
         image: "assets/photos/Kyiv.jpg",
         locations: [
-          { place: "Kyjivo sritis", x: 701, y: 328 }
+          { place: "Kyjivo sritis", xPct: 0.054165, yPct: 0.031078 }
         ],
         description: "Rusija panaudojo raketas ir dronus prieš sostinę. Dalis buvo numušta, bet buvo padaryta žalos infrastruktūrai. Tai buvo viena iš didžiausių oro atakų."
       },
@@ -1065,11 +1005,10 @@
         type: "naval",
         size: "large",
         locations: [
-          { place: "Sevastopolis", x: 962, y: 757 }
+          { place: "Sevastopolis", xPct: 0.074332, yPct: 0.071726 }
         ],
         description: "Buvo atakuota Juodosios jūros laivyno infrastruktūra. Apgadinti laivai ir bazės. Tai sumažino Rusijos jūrines galimybes."
       },
-
       {
         id: "donetsk-positional-fights-2025",
         year: "2025-01-01 – 2025-12-31",
@@ -1077,9 +1016,9 @@
         type: "frontline",
         size: "large",
         locations: [
-          { place: "Avdijivkos ruožas", x: 1270, y: 507 },
-          { place: "Časiv Jaro ruožas", x: 1118, y: 516 },
-          { place: "Donecko sritis", x: 1285, y: 540 }
+          { place: "Avdijivkos ruožas", xPct: 0.098130, yPct: 0.048039 },
+          { place: "Časiv Jaro ruožas", xPct: 0.086385, yPct: 0.048891 },
+          { place: "Donecko sritis", xPct: 0.099289, yPct: 0.051165 }
         ],
         description: "Donecko frontas išliko intensyviausias visame kare. Nuolatiniai puolimai ir kontratakos vyko su minimaliais teritoriniais pokyčiais. Nuostoliai abiejose pusėse išliko dideli."
       },
@@ -1090,9 +1029,9 @@
         type: "frontline",
         size: "normal",
         locations: [
-          { place: "Zaporižė", x: 1137, y: 491 },
-          { place: "Robotynė", x: 1120, y: 523 },
-          { place: "Pietinė linija", x: 1102, y: 583 }
+          { place: "Zaporižė", xPct: 0.087854, yPct: 0.046523 },
+          { place: "Robotynė", xPct: 0.086540, yPct: 0.049555 },
+          { place: "Pietinė linija", xPct: 0.085149, yPct: 0.055240 }
         ],
         description: "Vyko nuolatiniai lokalūs mūšiai. Nei viena pusė nepasiekė didelio proveržio. Frontas liko stabilus."
       },
@@ -1103,8 +1042,8 @@
         type: "frontline",
         size: "normal",
         locations: [
-          { place: "Svatovė–Kreminna kryptis", x: 1320, y: 402 },
-          { place: "Luhansko sritis", x: 1423, y: 437 }
+          { place: "Svatovė–Kreminna kryptis", xPct: 0.101994, yPct: 0.038090 },
+          { place: "Luhansko sritis", xPct: 0.109952, yPct: 0.041406 }
         ],
         description: "Regionas išliko aktyvus dėl savo strateginės padėties. Kovos vyko miškingose teritorijose. Tai apsunkino didelio masto operacijas."
       }
@@ -1114,4 +1053,3 @@
   </script>
 </body>
 </html>
-```
