@@ -85,13 +85,6 @@
       font-size: 12px;
     }
 
-    .note {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #444;
-      line-height: 1.45;
-    }
-
     button {
       width: 100%;
       margin-top: 10px;
@@ -379,20 +372,19 @@
     }
 
     function getDynamicFitPadding() {
-      const gap = 20;
       const isMobile = window.innerWidth <= 980;
       const rect = sidePanel.getBoundingClientRect();
 
       if (isMobile) {
         return {
-          paddingTopLeft: [gap, gap],
-          paddingBottomRight: [gap, Math.ceil(rect.height) + gap]
+          paddingTopLeft: [4, 4],
+          paddingBottomRight: [4, Math.ceil(rect.height) + 4]
         };
       }
 
       return {
-        paddingTopLeft: [gap, gap],
-        paddingBottomRight: [Math.ceil(rect.width) + gap, gap]
+        paddingTopLeft: [4, 4],
+        paddingBottomRight: [Math.ceil(rect.width) + 4, 4]
       };
     }
 
@@ -577,6 +569,11 @@
 
         map.invalidateSize();
         fitToImage();
+
+        setTimeout(() => {
+          map.zoomIn(1, { animate: false });
+        }, 0);
+
         clearDebug();
         drawEvents(year);
       } catch (err) {
@@ -614,6 +611,9 @@
     fitBtn.addEventListener("click", () => {
       map.invalidateSize();
       fitToImage();
+      setTimeout(() => {
+        map.zoomIn(1, { animate: false });
+      }, 0);
     });
 
     yearSelect.addEventListener("change", () => {
@@ -626,6 +626,9 @@
       resizeTimer = setTimeout(() => {
         map.invalidateSize();
         fitToImage();
+        setTimeout(() => {
+          map.zoomIn(1, { animate: false });
+        }, 0);
       }, 80);
     });
 
