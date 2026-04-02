@@ -290,7 +290,7 @@
     <div id="map"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="sidePanel">
     <h3>Metai</h3>
 
     <select id="yearSelect">
@@ -350,6 +350,7 @@
     const debugBtn = document.getElementById("debugBtn");
     const fitBtn = document.getElementById("fitBtn");
     const codeOut = document.getElementById("codeOut");
+    const sidePanel = document.getElementById("sidePanel");
 
     const map = L.map("map", {
       crs: L.CRS.Simple,
@@ -377,10 +378,32 @@
       });
     }
 
+    function getDynamicFitPadding() {
+      const gap = 20;
+      const isMobile = window.innerWidth <= 980;
+      const rect = sidePanel.getBoundingClientRect();
+
+      if (isMobile) {
+        return {
+          paddingTopLeft: [gap, gap],
+          paddingBottomRight: [gap, Math.ceil(rect.height) + gap]
+        };
+      }
+
+      return {
+        paddingTopLeft: [gap, gap],
+        paddingBottomRight: [Math.ceil(rect.width) + gap, gap]
+      };
+    }
+
     function fitToImage() {
       if (!currentBounds) return;
+
+      const { paddingTopLeft, paddingBottomRight } = getDynamicFitPadding();
+
       map.fitBounds(currentBounds, {
-        padding: [20, 20],
+        paddingTopLeft,
+        paddingBottomRight,
         animate: false
       });
     }
@@ -552,6 +575,7 @@
           [h * 1.2, w * 1.2]
         ]);
 
+        map.invalidateSize();
         fitToImage();
         clearDebug();
         drawEvents(year);
@@ -587,14 +611,22 @@
       clearDebug();
     });
 
-    fitBtn.addEventListener("click", fitToImage);
+    fitBtn.addEventListener("click", () => {
+      map.invalidateSize();
+      fitToImage();
+    });
 
     yearSelect.addEventListener("change", () => {
       loadYear(yearSelect.value);
     });
 
+    let resizeTimer = null;
     window.addEventListener("resize", () => {
-      setTimeout(() => map.invalidateSize(), 50);
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        map.invalidateSize();
+        fitToImage();
+      }, 80);
     });
 
     const HISTORICAL_EVENTS = [
