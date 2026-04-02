@@ -388,7 +388,7 @@
       };
     }
 
-    function fitToImage(extraZoom = 0) {
+    function fitToImage() {
       if (!currentBounds) return;
 
       const { paddingTopLeft, paddingBottomRight } = getDynamicFitPadding();
@@ -398,16 +398,6 @@
         paddingBottomRight,
         animate: false
       });
-
-      if (extraZoom > 0) {
-        map.once("moveend", () => {
-          map.setView(
-            map.getCenter(),
-            Math.min(map.getZoom() + extraZoom, map.getMaxZoom()),
-            { animate: false }
-          );
-        });
-      }
     }
 
     function clearDebug() {
@@ -578,7 +568,12 @@
         ]);
 
         map.invalidateSize();
-        fitToImage(1);
+        fitToImage();
+
+        setTimeout(() => {
+          map.zoomIn(1, { animate: false });
+        }, 0);
+
         clearDebug();
         drawEvents(year);
       } catch (err) {
@@ -615,7 +610,10 @@
 
     fitBtn.addEventListener("click", () => {
       map.invalidateSize();
-      fitToImage(1);
+      fitToImage();
+      setTimeout(() => {
+        map.zoomIn(1, { animate: false });
+      }, 0);
     });
 
     yearSelect.addEventListener("change", () => {
@@ -627,7 +625,10 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         map.invalidateSize();
-        fitToImage(1);
+        fitToImage();
+        setTimeout(() => {
+          map.zoomIn(1, { animate: false });
+        }, 0);
       }, 80);
     });
 
