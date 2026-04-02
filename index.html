@@ -184,21 +184,6 @@
       margin-bottom: 8px;
     }
 
-    .popup-link {
-      font-size: 12px;
-      line-height: 1.4;
-    }
-
-    .popup-link a {
-      color: #1a5fd0;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .popup-link a:hover {
-      text-decoration: underline;
-    }
-
     .leaflet-popup-content {
       min-width: 260px;
       max-width: 340px;
@@ -298,8 +283,7 @@
       <br><br>
       Paspaudus ant <b>battle</b> ikonos atsidarys detalus įvykio aprašymas.
       <br><br>
-      Jei yra vietinė JPG nuotrauka, ji bus rodoma lange.
-      Jei nuotraukos nėra, bus parodyta nuoroda pagal miesto vardą.
+      Jei objektui priskirta vietinė JPG nuotrauka, ji bus rodoma lange.
       <br><br>
       Debug režimas paliktas koordinačių tikslinimui.
     </div>
@@ -414,48 +398,17 @@
       return selected >= range.startYear && selected <= range.endYear;
     }
 
-    function getFallbackLink(eventItem) {
-      if (eventItem.imageLink) return eventItem.imageLink;
-
-      const firstPlace = eventItem.locations?.[0]?.place || eventItem.title || "Ukraine war";
-      return `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(firstPlace)}`;
-    }
-
-    function getFallbackLinkLabel(eventItem) {
-      if (eventItem.imageLinkLabel) return eventItem.imageLinkLabel;
-
-      const firstPlace = eventItem.locations?.[0]?.place || eventItem.title || "Nuotrauka";
-      return firstPlace;
-    }
-
     function renderMediaHtml(eventItem) {
-      if (eventItem.image) {
-        return `
-          <div class="popup-media">
-            <img
-              class="popup-image"
-              src="${escapeHtml(eventItem.image)}"
-              alt="${escapeHtml(eventItem.title)}"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-            />
-            <div class="popup-link" style="display:none;">
-              Vietinė nuotrauka nerasta.
-              <a href="${escapeHtml(getFallbackLink(eventItem))}" target="_blank" rel="noopener noreferrer">
-                ${escapeHtml(getFallbackLinkLabel(eventItem))}
-              </a>
-            </div>
-          </div>
-        `;
-      }
+      if (!eventItem.image) return "";
 
       return `
         <div class="popup-media">
-          <div class="popup-link">
-            Nuotraukos faile nėra.
-            <a href="${escapeHtml(getFallbackLink(eventItem))}" target="_blank" rel="noopener noreferrer">
-              ${escapeHtml(getFallbackLinkLabel(eventItem))}
-            </a>
-          </div>
+          <img
+            class="popup-image"
+            src="${escapeHtml(eventItem.image)}"
+            alt="${escapeHtml(eventItem.title)}"
+            onerror="this.style.display='none';"
+          />
         </div>
       `;
     }
@@ -585,7 +538,6 @@
         type: "battle",
         size: "large",
         image: "assets/photos/Hostomel.jpg",
-        imageLinkLabel: "Hostomelis",
         locations: [
           { place: "Hostomelis", x: 6318, y: 5151 }
         ],
@@ -598,7 +550,6 @@
         type: "offensive",
         size: "large",
         image: "assets/photos/Kyiv.jpg",
-        imageLinkLabel: "Kyjivas",
         locations: [
           { place: "Hostomelis", x: 6318, y: 5151 },
           { place: "Buča", x: 6287, y: 5109 },
@@ -614,8 +565,6 @@
         type: "battle",
         size: "normal",
         image: "assets/photos/Chernihiv.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Chernihiv",
-        imageLinkLabel: "Černihivas",
         locations: [
           { place: "Černihivas", x: 7013, y: 5762 }
         ],
@@ -628,8 +577,6 @@
         type: "battle",
         size: "normal",
         image: "assets/photos/Sumy.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Sumy",
-        imageLinkLabel: "Sumai",
         locations: [
           { place: "Sumai", x: 9345, y: 5377 }
         ],
@@ -642,8 +589,6 @@
         type: "battle",
         size: "large",
         image: "assets/photos/Kharkiv.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Kharkiv",
-        imageLinkLabel: "Charkovas",
         locations: [
           { place: "Charkovas", x: 10332, y: 4758 }
         ],
@@ -656,8 +601,6 @@
         type: "siege",
         size: "large",
         image: "assets/photos/Mariupol.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Mariupol",
-        imageLinkLabel: "Mariupolis",
         locations: [
           { place: "Mariupolis", x: 11206, y: 2812 }
         ],
@@ -670,8 +613,6 @@
         type: "siege",
         size: "normal",
         image: "assets/photos/Mariupol.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Azovstal+Mariupol",
-        imageLinkLabel: "Mariupolis / Azovstalis",
         locations: [
           { place: "Mariupolis / Azovstalis", x: 11242, y: 2816 }
         ],
@@ -684,8 +625,6 @@
         type: "massacre",
         size: "large",
         image: "assets/photos/Bucha.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Bucha",
-        imageLinkLabel: "Buča",
         locations: [
           { place: "Buča", x: 6287, y: 5109 }
         ],
@@ -698,8 +637,6 @@
         type: "naval",
         size: "normal",
         image: "assets/photos/Snake_Island.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Snake+Island+Ukraine",
-        imageLinkLabel: "Gyvačių sala",
         locations: [
           { place: "Gyvačių sala", x: 6275, y: 1578 }
         ],
@@ -711,8 +648,6 @@
         title: "Severodonecko mūšis",
         type: "battle",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Severodonetsk",
-        imageLinkLabel: "Severodoneckas",
         locations: [
           { place: "Severodoneckas", x: 11835, y: 4055 }
         ],
@@ -724,8 +659,6 @@
         title: "Lysyčansko mūšis",
         type: "battle",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Lysychansk",
-        imageLinkLabel: "Lysyčanskas",
         locations: [
           { place: "Lysyčanskas", x: 11791, y: 4017 }
         ],
@@ -737,8 +670,6 @@
         title: "Kremenčuko prekybos centro bombardavimas",
         type: "strike",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Kremenchuk",
-        imageLinkLabel: "Kremenčugas",
         locations: [
           { place: "Kremenčugas", x: 8440, y: 4143 }
         ],
@@ -750,8 +681,6 @@
         title: "Vinicos raketų smūgis (2022)",
         type: "strike",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Vinnytsia",
-        imageLinkLabel: "Vinica",
         locations: [
           { place: "Vinica", x: 5120, y: 4241 }
         ],
@@ -764,8 +693,6 @@
         type: "offensive",
         size: "large",
         image: "assets/photos/Kharkiv.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Kharkiv+counteroffensive+Izyum+Kupiansk",
-        imageLinkLabel: "Charkivas",
         locations: [
           { place: "Charkivas", x: 10332, y: 4758 },
           { place: "Iziumas", x: 11009, y: 4228 },
@@ -779,8 +706,6 @@
         title: "Iziumo išlaisvinimas",
         type: "liberation",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Izyum",
-        imageLinkLabel: "Iziumas",
         locations: [
           { place: "Iziumas", x: 11009, y: 4228 }
         ],
@@ -792,8 +717,6 @@
         title: "Lymano išlaisvinimas",
         type: "liberation",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Lyman+Donetsk",
-        imageLinkLabel: "Lymanas",
         locations: [
           { place: "Lymanas", x: 11368, y: 4080 }
         ],
@@ -805,8 +728,6 @@
         title: "Krymo tilto sprogimas",
         type: "sabotage",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Crimea+Bridge+explosion",
-        imageLinkLabel: "Krymo tiltas",
         locations: [
           { place: "Krymo tiltas", x: 10532, y: 1580 }
         ],
@@ -818,8 +739,6 @@
         title: "Chersono išlaisvinimas",
         type: "liberation",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Kherson+liberation",
-        imageLinkLabel: "Chersonas",
         locations: [
           { place: "Chersonas", x: 7881, y: 2493 }
         ],
@@ -833,8 +752,6 @@
         type: "battle",
         size: "normal",
         image: "assets/photos/Soledar.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Soledar",
-        imageLinkLabel: "Soledaras",
         locations: [
           { place: "Soledaras", x: 11261, y: 4040 }
         ],
@@ -847,8 +764,6 @@
         type: "battle",
         size: "large",
         image: "assets/photos/Bakhmut.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Bakhmut",
-        imageLinkLabel: "Bachmutas",
         locations: [
           { place: "Bachmutas", x: 1320, y: 516 }
         ],
@@ -861,8 +776,6 @@
         type: "battle",
         size: "normal",
         image: "assets/photos/Vuhledar.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Vuhledar",
-        imageLinkLabel: "Vuhledaras",
         locations: [
           { place: "Vuhledaras", x: 1238, y: 645 }
         ],
@@ -875,8 +788,6 @@
         type: "strike",
         size: "large",
         image: "assets/photos/Nova_Kakhovka.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Nova+Kakhovka+dam",
-        imageLinkLabel: "Naujoji Kachovka",
         locations: [
           { place: "Naujoji Kachovka", x: 1008, y: 598 }
         ],
@@ -888,8 +799,6 @@
         title: "Zaporižės krypties kontrpuolimas",
         type: "offensive",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Robotyne+Zaporizhzhia+counteroffensive",
-        imageLinkLabel: "Robotynė",
         locations: [
           { place: "Robotynė", x: 1120, y: 523 },
           { place: "Zaporižė", x: 1137, y: 491 },
@@ -903,8 +812,6 @@
         title: "Robotynės išlaisvinimas",
         type: "liberation",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Robotyne",
-        imageLinkLabel: "Robotynė",
         locations: [
           { place: "Robotynė", x: 1120, y: 523 }
         ],
@@ -916,8 +823,6 @@
         title: "Smūgiai Krymui (Sevastopolis)",
         type: "strike",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Sevastopol+strike+2023",
-        imageLinkLabel: "Sevastopolis",
         locations: [
           { place: "Sevastopolis", x: 962, y: 757 }
         ],
@@ -929,8 +834,6 @@
         title: "ATACMS smūgiai Berdianskui ir Luhanskui",
         type: "strike",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Berdiansk+ATACMS",
-        imageLinkLabel: "Berdianskas",
         locations: [
           { place: "Berdianskas", x: 1237, y: 593 },
           { place: "Luhanskas", x: 1423, y: 437 }
@@ -943,8 +846,6 @@
         title: "Odesos uostų apšaudymas",
         type: "strike",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Odesa+port+shelling",
-        imageLinkLabel: "Odesa",
         locations: [
           { place: "Odesa", x: 748, y: 611 }
         ],
@@ -957,8 +858,6 @@
         type: "offensive",
         size: "large",
         image: "assets/photos/Avdiivka.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Avdiivka",
-        imageLinkLabel: "Avdijivka",
         locations: [
           { place: "Avdijivka", x: 1270, y: 507 }
         ],
@@ -971,8 +870,6 @@
         type: "battle",
         size: "large",
         image: "assets/photos/Avdiivka.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Avdiivka",
-        imageLinkLabel: "Avdijivka",
         locations: [
           { place: "Avdijivka", x: 1270, y: 507 }
         ],
@@ -984,8 +881,6 @@
         title: "Puolimas link Očeretyne",
         type: "offensive",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Ocheretyne",
-        imageLinkLabel: "Očeretynė",
         locations: [
           { place: "Očeretynė", x: 1095, y: 578 },
           { place: "Avdijivkos vakarai", x: 1228, y: 520 }
@@ -999,8 +894,6 @@
         type: "offensive",
         size: "large",
         image: "assets/photos/Kharkiv.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Vovchansk+Kharkiv+region",
-        imageLinkLabel: "Charkivo sritis",
         locations: [
           { place: "Vovčansko kryptis", x: 1215, y: 330 },
           { place: "Charkivo sritis", x: 1190, y: 321 }
@@ -1014,8 +907,6 @@
         type: "battle",
         size: "large",
         image: "assets/photos/Chasiv_Yar.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Chasiv+Yar",
-        imageLinkLabel: "Časiv Jaras",
         locations: [
           { place: "Časiv Jaras", x: 1118, y: 516 }
         ],
@@ -1027,8 +918,6 @@
         title: "Smūgiai Krymo oro bazėms",
         type: "strike",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Dzhankoi+air+base+Crimea",
-        imageLinkLabel: "Džankojus",
         locations: [
           { place: "Džankojus", x: 1048, y: 699 },
           { place: "Sevastopolis", x: 962, y: 757 }
@@ -1041,8 +930,6 @@
         title: "Kovos Zaporižės fronte (2024)",
         type: "frontline",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Zaporizhzhia+front+2024",
-        imageLinkLabel: "Zaporižė",
         locations: [
           { place: "Zaporižė", x: 1137, y: 491 },
           { place: "Robotynė", x: 1120, y: 523 },
@@ -1057,8 +944,6 @@
         type: "strike",
         size: "large",
         image: "assets/photos/Kyiv.jpg",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Kyiv+air+defense+2024",
-        imageLinkLabel: "Kyjivo sritis",
         locations: [
           { place: "Kyjivo sritis", x: 701, y: 328 }
         ],
@@ -1070,8 +955,6 @@
         title: "Atakos prieš Juodosios jūros laivyną Kryme",
         type: "naval",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Sevastopol+Black+Sea+Fleet+2024",
-        imageLinkLabel: "Sevastopolis",
         locations: [
           { place: "Sevastopolis", x: 962, y: 757 }
         ],
@@ -1084,8 +967,6 @@
         title: "Pozicinės kovos Donecko srityje",
         type: "frontline",
         size: "large",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Donetsk+front+2025",
-        imageLinkLabel: "Donecko sritis",
         locations: [
           { place: "Avdijivkos ruožas", x: 1270, y: 507 },
           { place: "Časiv Jaro ruožas", x: 1118, y: 516 },
@@ -1099,8 +980,6 @@
         title: "Kovos Zaporižės linijoje (2025)",
         type: "frontline",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Zaporizhzhia+line+2025",
-        imageLinkLabel: "Zaporižė",
         locations: [
           { place: "Zaporižė", x: 1137, y: 491 },
           { place: "Robotynė", x: 1120, y: 523 },
@@ -1114,8 +993,6 @@
         title: "Kovos Luhansko srityje (Svatovė–Kreminna)",
         type: "frontline",
         size: "normal",
-        imageLink: "https://www.google.com/search?tbm=isch&q=Svatove+Kreminna+2025",
-        imageLinkLabel: "Svatovė–Kreminna kryptis",
         locations: [
           { place: "Svatovė–Kreminna kryptis", x: 1320, y: 402 },
           { place: "Luhansko sritis", x: 1423, y: 437 }
