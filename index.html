@@ -173,21 +173,21 @@
     }
 
     .popup-title {
-      font-size: 16px;
+      font-size: clamp(14px, 2.2vw, 16px);
       font-weight: 700;
       margin-bottom: 6px;
       line-height: 1.25;
     }
 
     .popup-meta {
-      font-size: 12px;
+      font-size: clamp(11px, 1.8vw, 12px);
       color: #555;
       margin-bottom: 8px;
       line-height: 1.4;
     }
 
     .popup-text {
-      font-size: 13px;
+      font-size: clamp(12px, 2vw, 13px);
       line-height: 1.5;
     }
 
@@ -201,11 +201,19 @@
       border-radius: 8px;
       border: 1px solid #ddd;
       margin-bottom: 8px;
+      max-height: 28vh;
+      object-fit: cover;
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px;
     }
 
     .leaflet-popup-content {
-      min-width: 260px;
-      max-width: 340px;
+      width: min(78vw, 340px) !important;
+      min-width: min(78vw, 340px);
+      max-width: min(78vw, 340px);
+      margin: 12px 14px;
     }
 
     .leaflet-control-attribution {
@@ -261,6 +269,19 @@
         max-height: 42vh;
       }
     }
+
+    @media (max-width: 640px) {
+      .leaflet-popup-content {
+        width: 82vw !important;
+        min-width: 82vw;
+        max-width: 82vw;
+        margin: 10px 12px;
+      }
+
+      .popup-image {
+        max-height: 24vh;
+      }
+    }
   </style>
 </head>
 
@@ -312,16 +333,6 @@
         <img class="legend-icon" src="assets/battle.png" alt="Battle" />
         <span>Mūšio / įvykio ikona</span>
       </div>
-    </div>
-
-    <div class="note">
-      Gali laisvai <b>zoominti</b> ir <b>stumdyti</b> žemėlapį.
-      <br><br>
-      Paspaudus ant <b>battle</b> ikonos atsidarys detalus įvykio aprašymas.
-      <br><br>
-      Jei objektui priskirta vietinė JPG nuotrauka, ji bus rodoma lange.
-      <br><br>
-      Debug režimas rodo procentines koordinates: <b>xPct</b> ir <b>yPct</b>.
     </div>
 
     <textarea
@@ -483,6 +494,15 @@
       `;
     }
 
+    function getResponsivePopupOptions() {
+      return {
+        maxWidth: Math.min(window.innerWidth * 0.82, 340),
+        minWidth: Math.min(window.innerWidth * 0.68, 220),
+        autoPan: true,
+        keepInView: true
+      };
+    }
+
     function addEventMarker(eventItem, loc) {
       const markerX = loc.xPct * currentImageWidth;
       const markerY = loc.yPct * currentImageHeight;
@@ -492,10 +512,7 @@
         title: eventItem.title
       });
 
-      marker.bindPopup(popupHtml(eventItem), {
-        maxWidth: 340
-      });
-
+      marker.bindPopup(popupHtml(eventItem), getResponsivePopupOptions());
       marker.addTo(eventLayer);
     }
 
