@@ -322,13 +322,14 @@
       <br><br>
       Jei objektui priskirta vietinė JPG nuotrauka, ji bus rodoma lange.
       <br><br>
-      Debug režimas paliktas koordinačių tikslinimui.
+      Debug režime rodomos procentinės koordinatės:
+      <b>xPct</b> ir <b>yPct</b>.
     </div>
 
     <textarea
       id="codeOut"
       readonly
-      placeholder="Kai Debug ON ir paspausi žemėlapyje – čia atsiras koordinatės."
+      placeholder="Kai Debug ON ir paspausi žemėlapyje – čia atsiras procentinės koordinatės."
     ></textarea>
   </div>
 
@@ -351,6 +352,8 @@
 
     let overlay = null;
     let currentBounds = null;
+    let currentImageWidth = 0;
+    let currentImageHeight = 0;
     let DEBUG = false;
 
     const eventLayer = L.layerGroup().addTo(map);
@@ -478,8 +481,68 @@
       `;
     }
 
+    function roundPct(value) {
+      return Number(value.toFixed(6));
+    }
+
+    function normalizeLocation(loc) {
+      if (typeof loc.xPct === "number" && typeof loc.yPct === "number") {
+        return {
+          ...loc,
+          xPct: roundPct(loc.xPct),
+          yPct: roundPct(loc.yPct)
+        };
+      }
+
+      if (
+        typeof loc.x === "number" &&
+        typeof loc.y === "number" &&
+        currentImageWidth > 0 &&
+        currentImageHeight > 0
+      ) {
+        return {
+          ...loc,
+          xPct: roundPct(loc.x / currentImageWidth),
+          yPct: roundPct(loc.y / currentImageHeight)
+        };
+      }
+
+      return {
+        ...loc,
+        xPct: 0,
+        yPct: 0
+      };
+    }
+
+    function locationToMapPoint(loc) {
+      const normalized = normalizeLocation(loc);
+
+      return {
+        x: normalized.xPct * currentImageWidth,
+        y: normalized.yPct * currentImageHeight,
+        xPct: normalized.xPct,
+        yPct: normalized.yPct
+      };
+    }
+
+    function convertEventsToPercentCoordinates() {
+      HISTORICAL_EVENTS.forEach(eventItem => {
+        eventItem.locations = eventItem.locations.map(loc => {
+          const normalized = normalizeLocation(loc);
+
+          return {
+            place: loc.place,
+            xPct: normalized.xPct,
+            yPct: normalized.yPct
+          };
+        });
+      });
+    }
+
     function addEventMarker(eventItem, loc) {
-      const marker = L.marker([loc.y, loc.x], {
+      const point = locationToMapPoint(loc);
+
+      const marker = L.marker([point.y, point.x], {
         icon: createBattleDivIcon(eventItem.size || "normal"),
         title: eventItem.title
       });
@@ -512,6 +575,8 @@
         const w = img.naturalWidth;
         const h = img.naturalHeight;
 
+        currentImageWidth = w;
+        currentImageHeight = h;
         currentBounds = [[0, 0], [h, w]];
 
         if (overlay) {
@@ -525,6 +590,7 @@
           [h * 1.2, w * 1.2]
         ]);
 
+        convertEventsToPercentCoordinates();
         fitToImage();
         clearDebug();
         drawEvents(year);
@@ -535,10 +601,16 @@
     }
 
     map.on("click", (e) => {
-      if (!DEBUG) return;
+      if (!DEBUG || currentImageWidth <= 0 || currentImageHeight <= 0) return;
 
-      const x = Math.round(e.latlng.lng);
-      const y = Math.round(e.latlng.lat);
+      const rawX = e.latlng.lng;
+      const rawY = e.latlng.lat;
+
+      const xPct = roundPct(rawX / currentImageWidth);
+      const yPct = roundPct(rawY / currentImageHeight);
+
+      const x = xPct * currentImageWidth;
+      const y = yPct * currentImageHeight;
 
       L.circleMarker([y, x], {
         radius: 4,
@@ -548,7 +620,7 @@
         fillOpacity: 0.8
       }).addTo(debugPointsLayer);
 
-      codeOut.value += `x: ${x}, y: ${y}\n`;
+      codeOut.value += `{ place: "", xPct: ${xPct}, yPct: ${yPct} }\n`;
     });
 
     debugBtn.addEventListener("click", () => {
