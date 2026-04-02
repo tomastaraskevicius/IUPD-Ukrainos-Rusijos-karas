@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="lt">
 <head>
@@ -345,6 +346,38 @@
       });
     }
 
+    function getEventYearRange(eventItem) {
+      const yearText = String(eventItem.year || "").trim();
+
+      const dateMatches = yearText.match(/\d{4}-\d{2}-\d{2}/g);
+      if (dateMatches && dateMatches.length > 0) {
+        const years = dateMatches.map(date => parseInt(date.slice(0, 4), 10));
+        return {
+          startYear: Math.min(...years),
+          endYear: Math.max(...years)
+        };
+      }
+
+      const yearMatches = yearText.match(/\b\d{4}\b/g);
+      if (yearMatches && yearMatches.length > 0) {
+        const years = yearMatches.map(y => parseInt(y, 10));
+        return {
+          startYear: Math.min(...years),
+          endYear: Math.max(...years)
+        };
+      }
+
+      return null;
+    }
+
+    function eventMatchesSelectedYear(eventItem, selectedYear) {
+      const range = getEventYearRange(eventItem);
+      if (!range) return false;
+
+      const selected = parseInt(selectedYear, 10);
+      return selected >= range.startYear && selected <= range.endYear;
+    }
+
     function popupHtml(eventItem) {
       const places = eventItem.locations.map(item => item.place).join(", ");
       const categoryMap = {
@@ -364,7 +397,7 @@
       return `
         <div class="popup-title">${eventItem.title}</div>
         <div class="popup-meta">
-          <b>Metai:</b> ${eventItem.year}<br>
+          <b>Data:</b> ${eventItem.year}<br>
           <b>Tipas:</b> ${categoryLabel}<br>
           <b>Vieta:</b> ${places}
         </div>
@@ -390,7 +423,7 @@
     function drawEvents(year) {
       eventLayer.clearLayers();
 
-      const selectedEvents = HISTORICAL_EVENTS.filter(item => item.year === year);
+      const selectedEvents = HISTORICAL_EVENTS.filter(item => eventMatchesSelectedYear(item, year));
 
       selectedEvents.forEach(eventItem => {
         eventItem.locations.forEach(loc => addEventMarker(eventItem, loc));
@@ -919,3 +952,4 @@
   </script>
 </body>
 </html>
+```
