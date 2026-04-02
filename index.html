@@ -153,6 +153,26 @@
       flex: 0 0 auto;
     }
 
+    .legend-color-box {
+      width: 18px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      flex: 0 0 auto;
+    }
+
+    .legend-color-box.ukraine {
+      background: #2f80ed;
+    }
+
+    .legend-color-box.russia {
+      background: #d32f2f;
+    }
+
+    .legend-color-box.occupied {
+      background: #7b1e3a;
+    }
+
     .popup-title {
       font-size: 16px;
       font-weight: 700;
@@ -268,13 +288,30 @@
 
     <div class="legend">
       <div><b>Legenda</b></div>
+
+      <div class="legend-row">
+        <span class="legend-color-box ukraine"></span>
+        <span>Ukrainos teritorija</span>
+      </div>
+
+      <div class="legend-row">
+        <span class="legend-color-box russia"></span>
+        <span>Rusijos teritorija</span>
+      </div>
+
+      <div class="legend-row">
+        <span class="legend-color-box occupied"></span>
+        <span>Rusijos okupuota Ukrainos teritorija</span>
+      </div>
+
       <div class="legend-row">
         <span class="legend-dot"></span>
-        <span>Vietovės taškas žemėlapyje</span>
+        <span>Miestas / vietovė</span>
       </div>
+
       <div class="legend-row">
         <img class="legend-icon" src="assets/battle.png" alt="Battle" />
-        <span>Mūšio / įvykio ikona dešinėje nuo vietovės</span>
+        <span>Mūšio / įvykio ikona</span>
       </div>
     </div>
 
